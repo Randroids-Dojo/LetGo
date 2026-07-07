@@ -11,6 +11,7 @@ import {
   GRAY_DARK,
   GRAY_LIGHT,
   RED,
+  SEAM,
   SKIN,
   WHITE,
   YELLOW,
@@ -103,7 +104,7 @@ function drawGatling(ctx: Ctx, rng: Rng, fire: boolean) {
   g.addColorStop(1, shade(GRAY_DARK, -0.2))
   ctx.fillStyle = g
   ctx.fill()
-  ctx.strokeStyle = 'rgba(10,12,16,0.55)'
+  ctx.strokeStyle = SEAM
   ctx.lineWidth = 2.5
   ctx.stroke()
   studSide(ctx, -2, -176, 7, 5, YELLOW)

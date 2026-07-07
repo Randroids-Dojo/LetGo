@@ -1182,8 +1182,8 @@ export function LetGoGame() {
     const world = worldRef.current as World
     world.player.kills += 1
     const def = ENEMY_DEFS[entity.logic.kind]
-    const coins = rngInt(world.rng, def.coinDrop.min, def.coinDrop.max) * (world.config.doubleCoins ? 2 : 1)
-    for (let i = 0; i < coins; i++) {
+    const studCount = rngInt(world.rng, def.studDrop.min, def.studDrop.max) * (world.config.doubleStuds ? 2 : 1)
+    for (let i = 0; i < studCount; i++) {
       const angle = world.rng() * Math.PI * 2
       const r = 0.3 + world.rng() * 0.8
       addPickup('stud', { x: entity.logic.pos.x + Math.sin(angle) * r, z: entity.logic.pos.z + Math.cos(angle) * r })
@@ -1629,7 +1629,7 @@ export function LetGoGame() {
         player.hasVaultKey = result.state.hasVaultKey
         player.pickupFlash = Math.min(1, player.pickupFlash + 0.4)
         if (pickup.kind === 'stud' || pickup.kind === 'studPile') {
-          sfxRef.current?.coin()
+          sfxRef.current?.stud()
         } else if (pickup.kind === 'vaultKey') {
           sfxRef.current?.keyPickup()
           player.grinUntil = now + 1200

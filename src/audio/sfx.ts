@@ -147,7 +147,7 @@ export class Sfx {
     this.sweep(700, 1300, 0.1, 0.18, 'triangle')
   }
 
-  coin() {
+  stud() {
     this.sweep(1500, 2200, 0.09, 0.14, 'sine')
   }
 

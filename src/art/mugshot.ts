@@ -3,7 +3,7 @@
 // cover idle glances, pain, the new-toy grin, and coming apart.
 
 import { hashString } from '@/game/rng'
-import { BLACK, BLUE, GRAY_DARK, SKIN, YELLOW, makeCanvas, makeRng, minifigFace, plasticRect, shade, studSide, type FaceMood } from './brick'
+import { BLACK, BLUE, GRAY_DARK, SKIN, YELLOW, makeCanvas, makeRng, minifigHead, plasticRect, shade, type FaceMood } from './brick'
 
 export const MUG_SIZE = 96
 
@@ -35,11 +35,7 @@ export function drawMugshot(tier: number, expression: MugExpression, look: numbe
     ctx.rotate(0.12)
   }
 
-  // The head: a glossy yellow cylinder with its top stud.
-  plasticRect(ctx, cx - r, cy - r, r * 2, r * 2, SKIN, { radius: r * 0.55, gloss: 0.6 })
-  studSide(ctx, cx, cy - r - 7, r * 0.4, 7, SKIN)
-
-  // Face.
+  // The head: a glossy yellow minifig cylinder with its top stud and face.
   let mood: FaceMood = 'calm'
   if (expression === 'dead') {
     mood = 'dead'
@@ -50,7 +46,7 @@ export function drawMugshot(tier: number, expression: MugExpression, look: numbe
   } else if (tier >= 3) {
     mood = 'angry'
   }
-  minifigFace(ctx, cx, cy, r, mood, expression === 'idle' ? look : 0)
+  minifigHead(ctx, cx, cy, r, SKIN, mood, expression === 'idle' ? look : 0)
 
   // Battle damage per tier: hairline cracks, scuffs, then a missing chip.
   ctx.strokeStyle = 'rgba(10, 12, 16, 0.65)'

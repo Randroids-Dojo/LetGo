@@ -3,7 +3,6 @@
 // floor is a classic green studded baseplate, and the ceiling is the tube
 // side of a big plate.
 
-import { hashString } from '@/game/rng'
 import {
   BLACK,
   BLUE,
@@ -127,17 +126,27 @@ export function drawWall(theme: WallTheme, seed: number): HTMLCanvasElement {
   return theme === 'classic' ? drawClassicWall(seed) : theme === 'castle' ? drawCastleWall(seed) : drawSpaceWall(seed)
 }
 
+// Stamp a piece (stud, tube) at the center of each cell of an 8x8 grid.
+function studGrid(ctx: Ctx, draw: (cx: number, cy: number, cell: number) => void) {
+  const grid = 8
+  const cell = SIZE / grid
+  for (let r = 0; r < grid; r++) {
+    for (let c = 0; c < grid; c++) {
+      draw(c * cell + cell / 2, r * cell + cell / 2, cell)
+    }
+  }
+}
+
 // The floor: a green baseplate with an 8x8 stud grid.
 export function drawFloor(seed: number): HTMLCanvasElement {
   const { canvas, ctx } = makeCanvas(SIZE, SIZE)
   const rng = makeRng(seed)
   base(ctx, GREEN)
-  const grid = 8
-  const cell = SIZE / grid
   // Faint plate seams every 4 studs.
+  const cell = SIZE / 8
   ctx.strokeStyle = 'rgba(10, 12, 16, 0.25)'
   ctx.lineWidth = 2
-  for (let i = 0; i <= grid; i += 4) {
+  for (let i = 0; i <= 8; i += 4) {
     ctx.beginPath()
     ctx.moveTo(i * cell, 0)
     ctx.lineTo(i * cell, SIZE)
@@ -145,11 +154,7 @@ export function drawFloor(seed: number): HTMLCanvasElement {
     ctx.lineTo(SIZE, i * cell)
     ctx.stroke()
   }
-  for (let r = 0; r < grid; r++) {
-    for (let c = 0; c < grid; c++) {
-      stud(ctx, c * cell + cell / 2, r * cell + cell / 2, cell * 0.3, shade(GREEN, (rng() - 0.5) * 0.08))
-    }
-  }
+  studGrid(ctx, (cx, cy, c) => stud(ctx, cx, cy, c * 0.3, shade(GREEN, (rng() - 0.5) * 0.08)))
   return canvas
 }
 
@@ -159,13 +164,7 @@ export function drawCeiling(seed: number): HTMLCanvasElement {
   const rng = makeRng(seed)
   const color = shade(GRAY_DARK, -0.45)
   base(ctx, color)
-  const grid = 8
-  const cell = SIZE / grid
-  for (let r = 0; r < grid; r++) {
-    for (let c = 0; c < grid; c++) {
-      tube(ctx, c * cell + cell / 2, r * cell + cell / 2, cell * 0.26, shade(color, (rng() - 0.5) * 0.1))
-    }
-  }
+  studGrid(ctx, (cx, cy, c) => tube(ctx, cx, cy, c * 0.26, shade(color, (rng() - 0.5) * 0.1)))
   return canvas
 }
 
@@ -217,7 +216,6 @@ export function drawDoor(locked: boolean, seed: number): HTMLCanvasElement {
 // The Workshop door back at the start room: bright blue with a sign.
 export function drawWorkshopDoor(): HTMLCanvasElement {
   const { canvas, ctx } = makeCanvas(SIZE, SIZE)
-  makeRng(hashString('workshop-door'))
   base(ctx, shade(BLUE, -0.4))
   plasticRect(ctx, 6, 6, SIZE - 12, SIZE - 12, BLUE, { radius: 8, gloss: 0.55, outlineWidth: 4 })
   // White sign plate with lettering.

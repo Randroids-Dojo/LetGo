@@ -14,6 +14,7 @@ import {
   GRAY_LIGHT,
   ORANGE,
   RED,
+  SEAM,
   SKIN,
   WHITE,
   YELLOW,
@@ -216,7 +217,7 @@ function drawCharacter(ctx: Ctx, kind: EnemyKind, spec: CharacterSpec, pose: Pos
   grad.addColorStop(1, shade(spec.torso, -0.15))
   ctx.fillStyle = grad
   ctx.fill()
-  ctx.strokeStyle = 'rgba(10,12,16,0.55)'
+  ctx.strokeStyle = SEAM
   ctx.lineWidth = 2.5
   ctx.stroke()
   ctx.restore()
@@ -428,7 +429,7 @@ function drawVestPickup(ctx: Ctx, heavy: boolean) {
   g.addColorStop(1, shade(color, -0.15))
   ctx.fillStyle = g
   ctx.fill()
-  ctx.strokeStyle = 'rgba(10,12,16,0.55)'
+  ctx.strokeStyle = SEAM
   ctx.lineWidth = 3
   ctx.stroke()
   // Shoulder cutouts.
@@ -562,7 +563,7 @@ export function drawProjectileSprites(): Record<ProjectileArt, HTMLCanvasElement
     fireball: make('proj-fireball', (ctx, rng) => {
       starburst(ctx, rng, 0, 0, 7, 20, 10, ORANGE, YELLOW)
     }),
-    ray: make('proj-ray', (ctx, rng) => {
+    ray: make('proj-ray', (ctx) => {
       ctx.save()
       ctx.shadowColor = '#7ef05a'
       ctx.shadowBlur = 10
@@ -575,7 +576,6 @@ export function drawProjectileSprites(): Record<ProjectileArt, HTMLCanvasElement
       ctx.ellipse(0, 0, 7, 3.2, 0, 0, Math.PI * 2)
       ctx.fillStyle = WHITE
       ctx.fill()
-      void rng
     }),
     tnt: make('proj-tnt', (ctx, rng) => {
       ctx.save()
@@ -584,7 +584,7 @@ export function drawProjectileSprites(): Record<ProjectileArt, HTMLCanvasElement
       ctx.restore()
       starburst(ctx, rng, 10, -18, 5, 8, 4, YELLOW, WHITE)
     }),
-    megabrick: make('proj-megabrick', (ctx, rng) => {
+    megabrick: make('proj-megabrick', (ctx) => {
       ctx.save()
       ctx.rotate(-0.35)
       plasticRect(ctx, -24, -10, 48, 22, RED, { radius: 3, gloss: 0.55, outlineWidth: 2.5 })
@@ -592,7 +592,6 @@ export function drawProjectileSprites(): Record<ProjectileArt, HTMLCanvasElement
         studSide(ctx, -18 + i * 12, -13.5, 4.5, 3.5, RED)
       }
       ctx.restore()
-      void rng
     })
   }
 }

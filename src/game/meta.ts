@@ -275,7 +275,7 @@ export type RunConfig = {
   automapRadius: number
   startFullAmmo: boolean
   reviveOnce: boolean
-  doubleCoins: boolean
+  doubleStuds: boolean
   skeletonKey: boolean
   bloodhound: boolean
 }
@@ -309,7 +309,7 @@ export function deriveRunConfig(meta: MetaState): RunConfig {
     automapRadius: 16 + statTotal(meta, 'automapRadius'),
     startFullAmmo: relics.includes('ammocase'),
     reviveOnce: relics.includes('rabbitsfoot'),
-    doubleCoins: relics.includes('loadeddice'),
+    doubleStuds: relics.includes('loadeddice'),
     skeletonKey: relics.includes('skeletonkey'),
     bloodhound: relics.includes('bloodhound')
   }

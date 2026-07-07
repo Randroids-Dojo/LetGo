@@ -23,7 +23,7 @@ export type EnemyDef = {
   windupSec: number
   attackCooldownSec: number
   // Studs dropped on death (each worth STUD_VALUE).
-  coinDrop: { min: number; max: number }
+  studDrop: { min: number; max: number }
   heightM: number
 }
 
@@ -38,7 +38,7 @@ export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
     attack: { type: 'hitscan', pellets: 1, dice: { count: 1, sides: 5, mult: 3 }, spreadRad: 0.391 },
     windupSec: 0.5,
     attackCooldownSec: 1.4,
-    coinDrop: { min: 2, max: 4 },
+    studDrop: { min: 2, max: 4 },
     heightM: 1.8
   },
   guard: {
@@ -50,7 +50,7 @@ export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
     attack: { type: 'hitscan', pellets: 3, dice: { count: 1, sides: 5, mult: 3 }, spreadRad: 0.391 },
     windupSec: 0.55,
     attackCooldownSec: 1.8,
-    coinDrop: { min: 3, max: 6 },
+    studDrop: { min: 3, max: 6 },
     heightM: 1.8
   },
   wizard: {
@@ -63,7 +63,7 @@ export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
     melee: { dice: { count: 1, sides: 8, mult: 3 }, rangeM: 1.4 },
     windupSec: 0.55,
     attackCooldownSec: 1.6,
-    coinDrop: { min: 3, max: 7 },
+    studDrop: { min: 3, max: 7 },
     heightM: 1.9
   },
   knight: {
@@ -75,7 +75,7 @@ export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
     melee: { dice: { count: 1, sides: 10, mult: 4 }, rangeM: 1.5 },
     windupSec: 0.4,
     attackCooldownSec: 1.1,
-    coinDrop: { min: 5, max: 9 },
+    studDrop: { min: 5, max: 9 },
     heightM: 2
   },
   golem: {
@@ -88,7 +88,7 @@ export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
     melee: { dice: { count: 1, sides: 8, mult: 10 }, rangeM: 1.7 },
     windupSec: 0.6,
     attackCooldownSec: 2,
-    coinDrop: { min: 12, max: 20 },
+    studDrop: { min: 12, max: 20 },
     heightM: 2.4
   }
 }

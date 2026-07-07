@@ -7,8 +7,8 @@ import type { PickupKind } from './dungeon'
 import type { PlayerVitals } from './combat'
 import { AMMO_PICKUPS, type AmmoState } from './weapons'
 
-export const COIN_SMALL_VALUE = 10
-export const COIN_PILE_VALUE = 100
+export const STUD_VALUE = 10
+export const STUD_PILE_VALUE = 100
 
 export type PickupPlayerState = {
   vitals: PlayerVitals
@@ -29,11 +29,11 @@ export function applyPickup(kind: PickupKind, state: PickupPlayerState, studsMul
   const { vitals, ammo, ammoMax } = state
   switch (kind) {
     case 'stud': {
-      const gain = Math.round(COIN_SMALL_VALUE * studsMult)
+      const gain = Math.round(STUD_VALUE * studsMult)
       return { state: { ...state, studs: state.studs + gain }, consumed: true }
     }
     case 'studPile': {
-      const gain = Math.round(COIN_PILE_VALUE * studsMult)
+      const gain = Math.round(STUD_PILE_VALUE * studsMult)
       return { state: { ...state, studs: state.studs + gain }, consumed: true }
     }
     case 'heartSmall': {
