@@ -15,20 +15,20 @@ describe('attackChance', () => {
 
 describe('tickEnemy', () => {
   it('wakes when it sees the target', () => {
-    const enemy = createEnemy('torpedo', { x: 0, z: 0 })
+    const enemy = createEnemy('skeleton', { x: 0, z: 0 })
     tickEnemy(enemy, { dt: 0.016, target: { x: 5, z: 0 }, canSeeTarget: true, rng: mulberry32(1) })
     expect(enemy.state).toBe('chase')
     expect(enemy.awake).toBe(true)
   })
 
   it('stays idle without line of sight', () => {
-    const enemy = createEnemy('torpedo', { x: 0, z: 0 })
+    const enemy = createEnemy('skeleton', { x: 0, z: 0 })
     tickEnemy(enemy, { dt: 0.016, target: { x: 5, z: 0 }, canSeeTarget: false, rng: mulberry32(1) })
     expect(enemy.state).toBe('idle')
   })
 
   it('winds up and fires a hitscan attack', () => {
-    const enemy = createEnemy('torpedo', { x: 0, z: 0 })
+    const enemy = createEnemy('skeleton', { x: 0, z: 0 })
     enemy.state = 'chase'
     enemy.awake = true
     enemy.attackCooldown = 0
@@ -43,7 +43,7 @@ describe('tickEnemy', () => {
   })
 
   it('melees when in range', () => {
-    const enemy = createEnemy('bruiser', { x: 0, z: 0 })
+    const enemy = createEnemy('knight', { x: 0, z: 0 })
     enemy.state = 'chase'
     enemy.attackCooldown = 0
     const rng = mulberry32(4)
@@ -56,7 +56,7 @@ describe('tickEnemy', () => {
   })
 
   it('finishes the death animation in the dead state', () => {
-    const enemy = createEnemy('torpedo', { x: 0, z: 0 })
+    const enemy = createEnemy('skeleton', { x: 0, z: 0 })
     damageEnemy(enemy, 999, mulberry32(5))
     expect(enemy.state).toBe('dying')
     tickEnemy(enemy, { dt: 1, target: { x: 5, z: 0 }, canSeeTarget: true, rng: mulberry32(6) })
@@ -66,12 +66,12 @@ describe('tickEnemy', () => {
 
 describe('damageEnemy', () => {
   it('kills at zero hp', () => {
-    const enemy = createEnemy('torpedo', { x: 0, z: 0 })
-    expect(damageEnemy(enemy, ENEMY_DEFS.torpedo.hp, mulberry32(1))).toBe('died')
+    const enemy = createEnemy('skeleton', { x: 0, z: 0 })
+    expect(damageEnemy(enemy, ENEMY_DEFS.skeleton.hp, mulberry32(1))).toBe('died')
   })
 
   it('records the attacker for infighting', () => {
-    const enemy = createEnemy('capo', { x: 0, z: 0 })
+    const enemy = createEnemy('guard', { x: 0, z: 0 })
     damageEnemy(enemy, 5, mulberry32(2), 77)
     expect(enemy.infightTargetId).toBe(77)
   })
@@ -80,7 +80,7 @@ describe('damageEnemy', () => {
     const rng = mulberry32(9)
     let flinches = 0
     for (let i = 0; i < 100; i++) {
-      const enemy = createEnemy('torpedo', { x: 0, z: 0 })
+      const enemy = createEnemy('skeleton', { x: 0, z: 0 })
       if (damageEnemy(enemy, 1, rng) === 'pain') {
         flinches++
       }
@@ -90,7 +90,7 @@ describe('damageEnemy', () => {
   })
 
   it('ignores damage to corpses', () => {
-    const enemy = createEnemy('torpedo', { x: 0, z: 0 })
+    const enemy = createEnemy('skeleton', { x: 0, z: 0 })
     damageEnemy(enemy, 999, mulberry32(1))
     expect(damageEnemy(enemy, 10, mulberry32(1))).toBe('ignored')
   })

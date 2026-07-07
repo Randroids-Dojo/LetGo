@@ -1,7 +1,8 @@
 // Enemy definitions and AI. The bestiary mirrors Doom's early roster
-// (zombieman, shotgun guy, imp, pinky, baron) re-cast as 1930s cartoon
-// mobsters. Stats follow Doom's tables: HP, pain chance out of 255,
-// damage dice, and the distance-based attack gamble.
+// (zombieman, shotgun guy, imp, pinky, baron) re-cast as minifig monsters:
+// skeleton, guard, wizard, knight, and a brick-built golem. Stats follow
+// Doom's tables: HP, pain chance out of 255, damage dice, and the
+// distance-based attack gamble.
 
 import type { EnemyKind } from './dungeon'
 import { rollDice, type Rng } from './rng'
@@ -14,21 +15,21 @@ export type EnemyDef = {
   radiusM: number
   // Chance out of 255 that a hit interrupts into the pain state.
   painChance: number
-  // Melee-only goons (the bruiser) have no ranged attack at all.
+  // Melee-only monsters (the knight) have no ranged attack at all.
   attack?:
     | { type: 'hitscan'; pellets: number; dice: { count: number; sides: number; mult: number }; spreadRad: number }
     | { type: 'projectile'; dice: { count: number; sides: number; mult: number }; speedM: number; radiusM: number }
   melee?: { dice: { count: number; sides: number; mult: number }; rangeM: number }
   windupSec: number
   attackCooldownSec: number
-  // Cheddar coins dropped on death (each worth COIN_VALUE).
+  // Studs dropped on death (each worth STUD_VALUE).
   coinDrop: { min: number; max: number }
   heightM: number
 }
 
 export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
-  torpedo: {
-    kind: 'torpedo',
+  skeleton: {
+    kind: 'skeleton',
     hp: 20,
     speedM: 2.2,
     radiusM: 0.55,
@@ -40,8 +41,8 @@ export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
     coinDrop: { min: 2, max: 4 },
     heightM: 1.8
   },
-  capo: {
-    kind: 'capo',
+  guard: {
+    kind: 'guard',
     hp: 30,
     speedM: 2.9,
     radiusM: 0.55,
@@ -52,8 +53,8 @@ export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
     coinDrop: { min: 3, max: 6 },
     heightM: 1.8
   },
-  alleycat: {
-    kind: 'alleycat',
+  wizard: {
+    kind: 'wizard',
     hp: 60,
     speedM: 2.9,
     radiusM: 0.55,
@@ -65,8 +66,8 @@ export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
     coinDrop: { min: 3, max: 7 },
     heightM: 1.9
   },
-  bruiser: {
-    kind: 'bruiser',
+  knight: {
+    kind: 'knight',
     hp: 150,
     speedM: 4.6,
     radiusM: 0.65,
@@ -77,8 +78,8 @@ export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
     coinDrop: { min: 5, max: 9 },
     heightM: 2
   },
-  fatcat: {
-    kind: 'fatcat',
+  golem: {
+    kind: 'golem',
     hp: 350,
     speedM: 2.4,
     radiusM: 0.8,

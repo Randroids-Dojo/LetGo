@@ -1,12 +1,12 @@
 // Meta progression, structured like Rogue Legacy 2:
 //
-// - Cheddar earned in a run is carried back to the Office on death.
-// - The Case Board is a fog-of-war upgrade tree: buying a node reveals its
+// - Studs collected in a run are carried back to the Workshop on death.
+// - The Build Plan is a fog-of-war upgrade tree: buying a node reveals its
 //   neighbors. Every rank of every node is permanent.
 // - The Armory sells weapon unlocks and permanent weapon tiers.
-// - The Fence sells relics: one-run items consumed by the next run.
-// - Starting a run, the landlord collects ALL cheddar you did not spend,
-//   unless Floor Safe ranks bank a percentage (the Charon rule).
+// - The Tinkerer sells gadgets: one-run items consumed by the next run.
+// - Starting a run, the cleanup crew sweeps up ALL studs you did not spend,
+//   unless Storage Bin ranks keep a percentage (the Charon rule).
 // - Cost inflation: every rank purchased anywhere raises all later node
 //   prices once you pass 30 total ranks (RL2's labor costs).
 
@@ -18,7 +18,7 @@ export type NodeEffect =
   | { stat: 'damage'; perRank: number }
   | { stat: 'speed'; perRank: number }
   | { stat: 'startArmor'; perRank: number }
-  | { stat: 'cheddarGain'; perRank: number }
+  | { stat: 'studsGain'; perRank: number }
   | { stat: 'ammoMax'; perRank: number }
   | { stat: 'dropLuck'; perRank: number }
   | { stat: 'fireRate'; perRank: number }
@@ -39,22 +39,22 @@ export type BoardNode = {
 }
 
 export const BOARD_NODES: BoardNode[] = [
-  { id: 'office', name: 'The Office', flavor: 'Home base. Rent is due.', x: 2, y: 2, maxRank: 1, baseCost: 0, effect: { stat: 'automapRadius', perRank: 0 } },
-  { id: 'snacks', name: 'Late Night Snacks', flavor: '+10 max health per rank.', x: 2, y: 1, maxRank: 10, baseCost: 80, effect: { stat: 'maxHp', perRank: 10 } },
-  { id: 'safe', name: 'Floor Safe', flavor: 'Bank 10% of leftover cheddar per rank when a run starts.', x: 2, y: 0, maxRank: 6, baseCost: 200, effect: { stat: 'keepFraction', perRank: 0.1 } },
-  { id: 'offshore', name: 'Offshore Account', flavor: 'Bank another 10% per rank.', x: 1, y: 0, maxRank: 4, baseCost: 800, effect: { stat: 'keepFraction', perRank: 0.1 } },
-  { id: 'stomach', name: 'Iron Stomach', flavor: '+15 max health per rank.', x: 3, y: 0, maxRank: 10, baseCost: 400, effect: { stat: 'maxHp', perRank: 15 } },
-  { id: 'boxing', name: 'Boxing Lessons', flavor: '+5% damage per rank.', x: 1, y: 2, maxRank: 10, baseCost: 90, effect: { stat: 'damage', perRank: 0.05 } },
-  { id: 'gunlocker', name: 'Gun Locker', flavor: 'Opens the Armory.', x: 0, y: 2, maxRank: 1, baseCost: 150, effect: { stat: 'unlockArmory', perRank: 1 } },
-  { id: 'range', name: 'Range Time', flavor: '+5% fire rate per rank.', x: 0, y: 1, maxRank: 5, baseCost: 250, effect: { stat: 'fireRate', perRank: 0.05 } },
-  { id: 'haymaker', name: 'Haymaker', flavor: '+5% damage per rank, again.', x: 0, y: 3, maxRank: 10, baseCost: 450, effect: { stat: 'damage', perRank: 0.05 } },
-  { id: 'streetsmarts', name: 'Street Smarts', flavor: '+10% cheddar from coins per rank.', x: 3, y: 2, maxRank: 10, baseCost: 100, effect: { stat: 'cheddarGain', perRank: 0.1 } },
-  { id: 'fence', name: 'The Fence', flavor: 'A guy who knows a guy. Opens one-run contraband.', x: 4, y: 2, maxRank: 1, baseCost: 200, effect: { stat: 'unlockFence', perRank: 1 } },
-  { id: 'charm', name: "Rabbit's Charm", flavor: '+4% enemy drop chance per rank.', x: 4, y: 1, maxRank: 5, baseCost: 130, effect: { stat: 'dropLuck', perRank: 0.04 } },
-  { id: 'jog', name: 'Morning Jog', flavor: '+3% move speed per rank.', x: 2, y: 3, maxRank: 5, baseCost: 100, effect: { stat: 'speed', perRank: 0.03 } },
-  { id: 'pockets', name: 'Deep Pockets', flavor: '+20% max ammo per rank.', x: 3, y: 3, maxRank: 5, baseCost: 150, effect: { stat: 'ammoMax', perRank: 0.2 } },
-  { id: 'maps', name: 'City Maps', flavor: 'The automap sees further per rank.', x: 1, y: 3, maxRank: 3, baseCost: 60, effect: { stat: 'automapRadius', perRank: 8 } },
-  { id: 'coat', name: 'Padded Coat', flavor: 'Start each run with +10 vest armor per rank.', x: 1, y: 1, maxRank: 10, baseCost: 120, effect: { stat: 'startArmor', perRank: 10 } }
+  { id: 'office', name: 'The Workshop', flavor: 'Home base. The tidy-up tax is due.', x: 2, y: 2, maxRank: 1, baseCost: 0, effect: { stat: 'automapRadius', perRank: 0 } },
+  { id: 'snacks', name: 'Sturdy Build', flavor: '+10 max health per rank.', x: 2, y: 1, maxRank: 10, baseCost: 80, effect: { stat: 'maxHp', perRank: 10 } },
+  { id: 'safe', name: 'Storage Bin', flavor: 'Keep 10% of leftover studs per rank when a run starts.', x: 2, y: 0, maxRank: 6, baseCost: 200, effect: { stat: 'keepFraction', perRank: 0.1 } },
+  { id: 'offshore', name: 'Secret Stash', flavor: 'Keep another 10% per rank.', x: 1, y: 0, maxRank: 4, baseCost: 800, effect: { stat: 'keepFraction', perRank: 0.1 } },
+  { id: 'stomach', name: 'Reinforced Frame', flavor: '+15 max health per rank.', x: 3, y: 0, maxRank: 10, baseCost: 400, effect: { stat: 'maxHp', perRank: 15 } },
+  { id: 'boxing', name: 'Power Grip', flavor: '+5% damage per rank.', x: 1, y: 2, maxRank: 10, baseCost: 90, effect: { stat: 'damage', perRank: 0.05 } },
+  { id: 'gunlocker', name: 'Parts Bin', flavor: 'Opens the Armory.', x: 0, y: 2, maxRank: 1, baseCost: 150, effect: { stat: 'unlockArmory', perRank: 1 } },
+  { id: 'range', name: 'Rapid Clutch', flavor: '+5% fire rate per rank.', x: 0, y: 1, maxRank: 5, baseCost: 250, effect: { stat: 'fireRate', perRank: 0.05 } },
+  { id: 'haymaker', name: 'Heavy Swing', flavor: '+5% damage per rank, again.', x: 0, y: 3, maxRank: 10, baseCost: 450, effect: { stat: 'damage', perRank: 0.05 } },
+  { id: 'streetsmarts', name: 'Stud Magnet', flavor: '+10% studs from pickups per rank.', x: 3, y: 2, maxRank: 10, baseCost: 100, effect: { stat: 'studsGain', perRank: 0.1 } },
+  { id: 'fence', name: 'The Tinkerer', flavor: 'Knows a rare piece when he sees one. Opens one-run gadgets.', x: 4, y: 2, maxRank: 1, baseCost: 200, effect: { stat: 'unlockFence', perRank: 1 } },
+  { id: 'charm', name: 'Lucky Brick', flavor: '+4% enemy drop chance per rank.', x: 4, y: 1, maxRank: 5, baseCost: 130, effect: { stat: 'dropLuck', perRank: 0.04 } },
+  { id: 'jog', name: 'Speed Wheels', flavor: '+3% move speed per rank.', x: 2, y: 3, maxRank: 5, baseCost: 100, effect: { stat: 'speed', perRank: 0.03 } },
+  { id: 'pockets', name: 'Deep Bins', flavor: '+20% max ammo per rank.', x: 3, y: 3, maxRank: 5, baseCost: 150, effect: { stat: 'ammoMax', perRank: 0.2 } },
+  { id: 'maps', name: 'Blueprint', flavor: 'The map sees further per rank.', x: 1, y: 3, maxRank: 3, baseCost: 60, effect: { stat: 'automapRadius', perRank: 8 } },
+  { id: 'coat', name: 'Plated Torso', flavor: 'Start each run with +10 vest armor per rank.', x: 1, y: 1, maxRank: 10, baseCost: 120, effect: { stat: 'startArmor', perRank: 10 } }
 ]
 
 const NODE_BY_ID = new Map(BOARD_NODES.map((node) => [node.id, node]))
@@ -73,14 +73,14 @@ export function nodeNeighbors(node: BoardNode): BoardNode[] {
 
 // --- Armory ---
 
-export type ArmoryWeapon = Exclude<WeaponId, 'paws' | 'snub'>
+export type ArmoryWeapon = Exclude<WeaponId, 'claws' | 'studgun'>
 
 export const WEAPON_UNLOCK_COSTS: Record<ArmoryWeapon, number> = {
-  scattergun: 300,
-  chatter: 650,
-  lobber: 1200,
+  scatter: 300,
+  gatling: 650,
+  dynamite: 1200,
   raygun: 2000,
-  bigcheese: 4000
+  megabrick: 4000
 }
 
 export const WEAPON_TIER_MAX = 3
@@ -95,11 +95,11 @@ export function weaponUnlockCost(meta: MetaState, weapon: ArmoryWeapon): number 
 // Tier prices follow RL2's blacksmith multiplier feel: each tier costs a
 // growing multiple of the weapon's unlock price.
 export function weaponTierCost(meta: MetaState, weapon: WeaponId, tier: number): number {
-  const base = weapon === 'snub' ? 150 : WEAPON_UNLOCK_COSTS[weapon as ArmoryWeapon] ?? 150
+  const base = weapon === 'studgun' ? 150 : WEAPON_UNLOCK_COSTS[weapon as ArmoryWeapon] ?? 150
   return Math.round(base * 0.5 * (tier + 1)) + laborCost(meta)
 }
 
-// --- Relics (one-run contraband) ---
+// --- Gadgets (one-run items) ---
 
 export type RelicId =
   | 'rabbitsfoot'
@@ -114,14 +114,14 @@ export type RelicId =
 export type RelicDef = { id: RelicId; name: string; flavor: string; cost: number }
 
 export const RELICS: RelicDef[] = [
-  { id: 'rabbitsfoot', name: "Rabbit's Foot", flavor: 'Cheat death once. Wake up at 50 health.', cost: 250 },
-  { id: 'espresso', name: 'Double Espresso', flavor: '+25% move speed for the run.', cost: 150 },
-  { id: 'picnic', name: 'Picnic Basket', flavor: 'Start the run 50 health over the cap.', cost: 120 },
-  { id: 'loadeddice', name: 'Loaded Dice', flavor: 'Enemies drop double coins.', cost: 200 },
-  { id: 'umbrella', name: 'Iron Umbrella', flavor: 'Start with 100 trench armor.', cost: 180 },
-  { id: 'ammocase', name: 'Case of Ammo', flavor: 'Start with every pocket full.', cost: 160 },
-  { id: 'skeletonkey', name: 'Skeleton Key', flavor: 'Vault doors swing open for you.', cost: 220 },
-  { id: 'bloodhound', name: 'Bloodhound Nose', flavor: 'The automap sniffs out pickups.', cost: 100 }
+  { id: 'rabbitsfoot', name: 'Extra Life', flavor: 'Cheat death once. Rebuild at 50 health.', cost: 250 },
+  { id: 'espresso', name: 'Turbo Charger', flavor: '+25% move speed for the run.', cost: 150 },
+  { id: 'picnic', name: 'Health Pack', flavor: 'Start the run 50 health over the cap.', cost: 120 },
+  { id: 'loadeddice', name: 'Golden Touch', flavor: 'Enemies drop double studs.', cost: 200 },
+  { id: 'umbrella', name: 'Riot Plate', flavor: 'Start with 100 heavy armor.', cost: 180 },
+  { id: 'ammocase', name: 'Ammo Crate', flavor: 'Start with every bin full.', cost: 160 },
+  { id: 'skeletonkey', name: 'Master Key', flavor: 'Vault doors pop open for you.', cost: 220 },
+  { id: 'bloodhound', name: 'Radar Chip', flavor: 'The map pings nearby pickups.', cost: 100 }
 ]
 
 export const RELIC_BY_ID = new Map(RELICS.map((relic) => [relic.id, relic]))
@@ -130,7 +130,7 @@ export const RELIC_BY_ID = new Map(RELICS.map((relic) => [relic.id, relic]))
 
 export const metaSchema = z.object({
   version: z.literal(1),
-  cheddar: z.number().int().nonnegative(),
+  studs: z.number().int().nonnegative(),
   nodes: z.record(z.string(), z.number().int().nonnegative()),
   weaponsUnlocked: z.array(z.string()),
   weaponTiers: z.record(z.string(), z.number().int().nonnegative()),
@@ -146,9 +146,9 @@ export type MetaState = z.infer<typeof metaSchema>
 export function createMetaState(): MetaState {
   return {
     version: 1,
-    cheddar: 0,
+    studs: 0,
     nodes: { office: 1 },
-    weaponsUnlocked: ['paws', 'snub'],
+    weaponsUnlocked: ['claws', 'studgun'],
     weaponTiers: {},
     relics: [],
     bestRing: 0,
@@ -197,7 +197,7 @@ export function visibleNodes(meta: MetaState): Set<string> {
 
 export function purchaseNode(meta: MetaState, id: string): MetaState | null {
   const cost = nodeCost(meta, id)
-  if (cost === null || meta.cheddar < cost) {
+  if (cost === null || meta.studs < cost) {
     return null
   }
   if (!visibleNodes(meta).has(id)) {
@@ -205,7 +205,7 @@ export function purchaseNode(meta: MetaState, id: string): MetaState | null {
   }
   return {
     ...meta,
-    cheddar: meta.cheddar - cost,
+    studs: meta.studs - cost,
     nodes: { ...meta.nodes, [id]: nodeRank(meta, id) + 1 }
   }
 }
@@ -223,14 +223,14 @@ export function purchaseWeapon(meta: MetaState, weapon: ArmoryWeapon): MetaState
     return null
   }
   const cost = weaponUnlockCost(meta, weapon)
-  if (meta.cheddar < cost) {
+  if (meta.studs < cost) {
     return null
   }
-  return { ...meta, cheddar: meta.cheddar - cost, weaponsUnlocked: [...meta.weaponsUnlocked, weapon] }
+  return { ...meta, studs: meta.studs - cost, weaponsUnlocked: [...meta.weaponsUnlocked, weapon] }
 }
 
 export function purchaseWeaponTier(meta: MetaState, weapon: WeaponId): MetaState | null {
-  if (!armoryUnlocked(meta) || !meta.weaponsUnlocked.includes(weapon) || weapon === 'paws') {
+  if (!armoryUnlocked(meta) || !meta.weaponsUnlocked.includes(weapon) || weapon === 'claws') {
     return null
   }
   const tier = meta.weaponTiers[weapon] ?? 0
@@ -238,12 +238,12 @@ export function purchaseWeaponTier(meta: MetaState, weapon: WeaponId): MetaState
     return null
   }
   const cost = weaponTierCost(meta, weapon, tier)
-  if (meta.cheddar < cost) {
+  if (meta.studs < cost) {
     return null
   }
   return {
     ...meta,
-    cheddar: meta.cheddar - cost,
+    studs: meta.studs - cost,
     weaponTiers: { ...meta.weaponTiers, [weapon]: tier + 1 }
   }
 }
@@ -253,10 +253,10 @@ export function purchaseRelic(meta: MetaState, relicId: RelicId): MetaState | nu
     return null
   }
   const relic = RELIC_BY_ID.get(relicId)
-  if (!relic || meta.cheddar < relic.cost) {
+  if (!relic || meta.studs < relic.cost) {
     return null
   }
-  return { ...meta, cheddar: meta.cheddar - relic.cost, relics: [...meta.relics, relicId] }
+  return { ...meta, studs: meta.studs - relic.cost, relics: [...meta.relics, relicId] }
 }
 
 // --- Derived run configuration ---
@@ -267,8 +267,8 @@ export type RunConfig = {
   damageMult: number
   speedMult: number
   startArmor: number
-  startArmorClass: 'none' | 'vest' | 'trench'
-  cheddarMult: number
+  startArmorClass: 'none' | 'vest' | 'heavy'
+  studsMult: number
   ammoMaxMult: number
   dropLuck: number
   fireRateMult: number
@@ -301,8 +301,8 @@ export function deriveRunConfig(meta: MetaState): RunConfig {
     damageMult: 1 + statTotal(meta, 'damage'),
     speedMult: (1 + statTotal(meta, 'speed')) * (relics.includes('espresso') ? 1.25 : 1),
     startArmor: umbrella ? Math.max(100, coatArmor) : coatArmor,
-    startArmorClass: umbrella ? 'trench' : coatArmor > 0 ? 'vest' : 'none',
-    cheddarMult: 1 + statTotal(meta, 'cheddarGain'),
+    startArmorClass: umbrella ? 'heavy' : coatArmor > 0 ? 'vest' : 'none',
+    studsMult: 1 + statTotal(meta, 'studsGain'),
     ammoMaxMult: 1 + statTotal(meta, 'ammoMax'),
     dropLuck: statTotal(meta, 'dropLuck'),
     fireRateMult: 1 + statTotal(meta, 'fireRate'),
@@ -319,24 +319,24 @@ export function keepFraction(meta: MetaState): number {
   return Math.min(1, statTotal(meta, 'keepFraction'))
 }
 
-// The Charon rule: starting a run costs all unbanked cheddar and consumes
+// The Charon rule: starting a run costs all unbanked studs and consumes
 // the relics bought for this run.
 export function beginRun(meta: MetaState): MetaState {
-  const kept = Math.floor(meta.cheddar * keepFraction(meta))
+  const kept = Math.floor(meta.studs * keepFraction(meta))
   return {
     ...meta,
-    cheddar: kept,
+    studs: kept,
     relics: [],
-    rentPaid: meta.rentPaid + (meta.cheddar - kept)
+    rentPaid: meta.rentPaid + (meta.studs - kept)
   }
 }
 
-export type RunSummary = { cheddarEarned: number; kills: number; ring: number }
+export type RunSummary = { studsEarned: number; kills: number; ring: number }
 
 export function endRun(meta: MetaState, summary: RunSummary): MetaState {
   return {
     ...meta,
-    cheddar: meta.cheddar + summary.cheddarEarned,
+    studs: meta.studs + summary.studsEarned,
     bestRing: Math.max(meta.bestRing, summary.ring),
     totalKills: meta.totalKills + summary.kills,
     totalDeaths: meta.totalDeaths + 1

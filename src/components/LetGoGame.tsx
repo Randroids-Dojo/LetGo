@@ -1,30 +1,31 @@
 'use client'
 
-// FLATLINE: a hard-boiled mouse story.
+// LETGO: an endless brick dungeon.
 //
-// First-person Doom-mechanics shooter in an endless streamed dungeon, drawn
-// like a 1934 rubber-hose cartoon. This component owns the Three.js world,
-// the frame loop, and the screen flow (title -> run -> death -> office).
-// All simulation rules live in src/game; all drawing recipes in src/art.
+// First-person Doom-mechanics shooter in an endless streamed dungeon, built
+// out of bright plastic bricks and minifigs. This component owns the
+// Three.js world, the frame loop, and the screen flow (title -> run ->
+// death -> workshop). All simulation rules live in src/game; all drawing
+// recipes in src/art.
 
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { z } from 'zod'
-import { drawFilmFrame, diffusionFilter, makeGrainTiles, FILM_PRESETS, type FilmPreset } from '@/art/film'
+import { drawPostFrame, plasticFilter, makeSparkleTiles, POST_PRESETS, type PostPreset } from '@/art/post'
 import { drawMugshot, mugTierForHp, type MugExpression } from '@/art/mugshot'
 import {
   drawCrateSprites,
   drawEnemySprites,
   drawExplosion,
   drawImpactStar,
-  drawInkSplatSprites,
+  drawDebrisSprites,
   drawPickupSprites,
   drawProjectileSprites,
   type ProjectileArt,
   type SpriteSheet,
   type EnemyFrame
 } from '@/art/sprites'
-import { drawCeiling, drawDoor, drawFloor, drawOfficeDoor, drawWall, themeForRing } from '@/art/textures'
+import { drawCeiling, drawDoor, drawFloor, drawWorkshopDoor, drawWall, themeForRing } from '@/art/textures'
 import { drawViewmodel, VIEW_H, VIEW_W, type ViewmodelSet } from '@/art/viewmodel'
 import { Sfx } from '@/audio/sfx'
 import { moveWithSliding, type SolidAt } from '@/game/collision'
@@ -100,12 +101,12 @@ import {
   type AmmoState,
   type WeaponId
 } from '@/game/weapons'
-import { OfficeScreen } from './OfficeScreen'
+import { WorkshopScreen } from './WorkshopScreen'
 
-const filmSchema = z.enum(['studio', 'directors', 'vintage'])
+const filmSchema = z.enum(['clean', 'playful', 'retro'])
 
-const META_KEY = 'flatline.meta.v2'
-const FILM_KEY = 'flatline.film.v1'
+const META_KEY = 'letgo.meta.v1'
+const FILM_KEY = 'letgo.style.v1'
 const PLAYER_RADIUS = 0.45
 const EYE_HEIGHT = 1.5
 const ACTIVE_CHUNK_RADIUS = 2
@@ -113,7 +114,7 @@ const KEEP_CHUNK_RADIUS = 3
 const ENEMY_THINK_RADIUS = 30
 const HITSCAN_RANGE = 44
 
-type Screen = 'title' | 'playing' | 'dead' | 'office'
+type Screen = 'title' | 'playing' | 'dead' | 'workshop'
 
 type HudSnapshot = {
   hp: number
@@ -121,12 +122,12 @@ type HudSnapshot = {
   ammoInWeapon: number | null
   weapon: WeaponId
   owned: WeaponId[]
-  cheddar: number
+  studs: number
   ring: number
   hasKey: boolean
 }
 
-type RunSummaryView = { cheddar: number; kills: number; ring: number; seconds: number }
+type RunSummaryView = { studs: number; kills: number; ring: number; seconds: number }
 
 type EnemyEntity = {
   logic: Enemy
@@ -163,11 +164,11 @@ function buildArt() {
     return t
   }
   const enemySheets: Record<EnemyKind, SpriteSheet> = {
-    torpedo: drawEnemySprites('torpedo'),
-    capo: drawEnemySprites('capo'),
-    alleycat: drawEnemySprites('alleycat'),
-    bruiser: drawEnemySprites('bruiser'),
-    fatcat: drawEnemySprites('fatcat')
+    skeleton: drawEnemySprites('skeleton'),
+    guard: drawEnemySprites('guard'),
+    wizard: drawEnemySprites('wizard'),
+    knight: drawEnemySprites('knight'),
+    golem: drawEnemySprites('golem')
   }
   const enemyTex = {} as Record<EnemyKind, Record<EnemyFrame, THREE.Texture[]>>
   for (const kind of Object.keys(enemySheets) as EnemyKind[]) {
@@ -187,7 +188,7 @@ function buildArt() {
     projTex[kind] = projSheets[kind].map((c) => tex(c))
   }
   const wallMaterials: Record<string, THREE.MeshLambertMaterial> = {}
-  for (const theme of ['brick', 'panel', 'stone'] as const) {
+  for (const theme of ['classic', 'castle', 'space'] as const) {
     wallMaterials[theme] = new THREE.MeshLambertMaterial({ map: tex(drawWall(theme, hashString(`wall-${theme}`))) })
   }
   // Shared chunk-building resources: repeat is identical for every chunk,
@@ -200,7 +201,7 @@ function buildArt() {
   for (const id of WEAPON_ORDER) {
     viewmodels[id] = drawViewmodel(id)
   }
-  const splatTextures = drawInkSplatSprites().map((c) => tex(c))
+  const splatTextures = drawDebrisSprites().map((c) => tex(c))
   return {
     wallMaterials,
     wallGeo: new THREE.BoxGeometry(CELL_M, WALL_HEIGHT_M, CELL_M),
@@ -211,7 +212,7 @@ function buildArt() {
     splatMaterials: splatTextures.map((t) => new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false })),
     door: tex(drawDoor(false, 21)),
     vaultDoor: tex(drawDoor(true, 22)),
-    officeDoor: tex(drawOfficeDoor()),
+    workshopDoor: tex(drawWorkshopDoor()),
     enemyTex,
     pickupTex,
     projTex,
@@ -255,7 +256,7 @@ type World = {
     fireHeld: boolean
     fireQueued: boolean
     firedWhileHeld: boolean
-    cheddarRun: number
+    studsRun: number
     kills: number
     maxRing: number
     hasVaultKey: boolean
@@ -313,13 +314,13 @@ function createWorld(seed: number, config: RunConfig, meta: MetaState): World {
       vitals: { hp: config.startHp, maxHp: config.maxHp, armor: config.startArmor, armorClass: config.startArmorClass },
       ammo: start,
       ammoMax,
-      weapon: 'snub',
+      weapon: 'studgun',
       owned: [...meta.weaponsUnlocked] as WeaponId[],
       cooldown: 0.3,
       fireHeld: false,
       fireQueued: false,
       firedWhileHeld: false,
-      cheddarRun: 0,
+      studsRun: 0,
       kills: 0,
       maxRing: 0,
       hasVaultKey: false,
@@ -340,11 +341,11 @@ function createWorld(seed: number, config: RunConfig, meta: MetaState): World {
   }
 }
 
-export function FlatlineGame() {
+export function LetGoGame() {
   const [screen, setScreen] = useState<Screen>('title')
   const [paused, setPaused] = useState(false)
   const [meta, setMeta] = useState<MetaState>(createMetaState)
-  const [film, setFilm] = useState<FilmPreset>('directors')
+  const [film, setFilm] = useState<PostPreset>('playful')
   const [muted, setMuted] = useState(false)
   const [hud, setHud] = useState<HudSnapshot | null>(null)
   const [summary, setSummary] = useState<RunSummaryView | null>(null)
@@ -410,7 +411,7 @@ export function FlatlineGame() {
     writeStorage(META_KEY, next)
   }, [])
 
-  const changeFilm = useCallback((preset: FilmPreset) => {
+  const changeFilm = useCallback((preset: PostPreset) => {
     setFilm(preset)
     writeStorage(FILM_KEY, preset)
   }, [])
@@ -492,12 +493,12 @@ export function FlatlineGame() {
     }
     const seconds = Math.round((performance.now() - world.player.runStartAt) / 1000)
     const next = endRun(metaRef.current, {
-      cheddarEarned: world.player.cheddarRun,
+      studsEarned: world.player.studsRun,
       kills: world.player.kills,
       ring: world.player.maxRing
     })
     saveMeta(next)
-    setSummary({ cheddar: world.player.cheddarRun, kills: world.player.kills, ring: world.player.maxRing, seconds })
+    setSummary({ studs: world.player.studsRun, kills: world.player.kills, ring: world.player.maxRing, seconds })
     setScreen('dead')
     sfxRef.current?.stopAmbience()
   }, [saveMeta])
@@ -523,7 +524,7 @@ export function FlatlineGame() {
     threeRef.current = { renderer, scene, camera }
     artRef.current = buildArt()
     sfxRef.current = new Sfx()
-    grainRef.current = { tiles: makeGrainTiles(), frame: 0 }
+    grainRef.current = { tiles: makeSparkleTiles(), frame: 0 }
 
     const onResize = () => {
       renderer.setSize(mount.clientWidth, mount.clientHeight)
@@ -797,14 +798,14 @@ export function FlatlineGame() {
     }
     const grant = (e: Event) => {
       const amount = (e as CustomEvent<number>).detail ?? 0
-      saveMeta({ ...metaRef.current, cheddar: metaRef.current.cheddar + amount })
+      saveMeta({ ...metaRef.current, studs: metaRef.current.studs + amount })
     }
     const spawnGoons = () => {
       const world = worldRef.current
       if (!world || screenRef.current !== 'playing') {
         return
       }
-      const kinds: EnemyKind[] = ['torpedo', 'capo', 'alleycat', 'bruiser', 'fatcat']
+      const kinds: EnemyKind[] = ['skeleton', 'guard', 'wizard', 'knight', 'golem']
       kinds.forEach((kind, i) => {
         addEnemy(kind, {
           x: world.player.pos.x + Math.sin(world.player.yaw + (i - 2) * 0.35) * (5 + i),
@@ -813,19 +814,19 @@ export function FlatlineGame() {
       })
     }
     // Read-only probe so motion tests can assert the player actually moved.
-    const debugWindow = window as Window & { flatlineDebug?: () => { x: number; z: number; yaw: number } | null }
-    debugWindow.flatlineDebug = () => {
+    const debugWindow = window as Window & { letgoDebug?: () => { x: number; z: number; yaw: number } | null }
+    debugWindow.letgoDebug = () => {
       const world = worldRef.current
       return world ? { x: world.player.pos.x, z: world.player.pos.z, yaw: world.player.yaw } : null
     }
-    window.addEventListener('flatline:force-death', forceDeath)
-    window.addEventListener('flatline:grant-cheddar', grant)
-    window.addEventListener('flatline:spawn-goons', spawnGoons)
+    window.addEventListener('letgo:force-death', forceDeath)
+    window.addEventListener('letgo:grant-studs', grant)
+    window.addEventListener('letgo:spawn-goons', spawnGoons)
     return () => {
-      delete debugWindow.flatlineDebug
-      window.removeEventListener('flatline:force-death', forceDeath)
-      window.removeEventListener('flatline:grant-cheddar', grant)
-      window.removeEventListener('flatline:spawn-goons', spawnGoons)
+      delete debugWindow.letgoDebug
+      window.removeEventListener('letgo:force-death', forceDeath)
+      window.removeEventListener('letgo:grant-studs', grant)
+      window.removeEventListener('letgo:spawn-goons', spawnGoons)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- killPlayer/addEnemy read only refs
   }, [saveMeta])
@@ -1003,7 +1004,7 @@ export function FlatlineGame() {
       return
     }
     const id = world.nextId++
-    const scale = kind === 'coinSmall' ? 0.45 : kind === 'cheeseWheel' || kind === 'coinPile' ? 0.8 : 0.65
+    const scale = kind === 'stud' ? 0.45 : kind === 'heartBig' || kind === 'studPile' ? 0.8 : 0.65
     const sprite = spriteFor(art.pickupTex[kind][0], scale)
     sprite.position.set(pos.x, scale / 2 + 0.15, pos.z)
     three.scene.add(sprite)
@@ -1185,11 +1186,11 @@ export function FlatlineGame() {
     for (let i = 0; i < coins; i++) {
       const angle = world.rng() * Math.PI * 2
       const r = 0.3 + world.rng() * 0.8
-      addPickup('coinSmall', { x: entity.logic.pos.x + Math.sin(angle) * r, z: entity.logic.pos.z + Math.cos(angle) * r })
+      addPickup('stud', { x: entity.logic.pos.x + Math.sin(angle) * r, z: entity.logic.pos.z + Math.cos(angle) * r })
     }
     // Luck-based supply drops, doom style.
     if (world.rng() < 0.18 + world.config.dropLuck) {
-      addPickup(world.rng() < 0.5 ? 'cheeseBit' : 'bullets', entity.logic.pos)
+      addPickup(world.rng() < 0.5 ? 'heartSmall' : 'bullets', entity.logic.pos)
     }
     addFloorSplat(entity.logic.pos)
   }
@@ -1208,7 +1209,7 @@ export function FlatlineGame() {
     threeRef.current?.scene.remove(crate.sprite)
     explodeAt(crate.pos, { maxDamage: 128, radiusM: 4 })
     if (world.rng() < 0.4) {
-      addPickup('coinSmall', crate.pos)
+      addPickup('stud', crate.pos)
     }
   }
 
@@ -1277,7 +1278,7 @@ export function FlatlineGame() {
     }
     if (def.projectile) {
       const damage = Math.round(rollDamage(world.rng, def.dice) * mult)
-      const kind: ProjectileArt = player.weapon === 'lobber' ? 'tnt' : player.weapon === 'bigcheese' ? 'bigcheese' : 'ray'
+      const kind: ProjectileArt = player.weapon === 'dynamite' ? 'tnt' : player.weapon === 'megabrick' ? 'megabrick' : 'ray'
       const origin = {
         x: player.pos.x + Math.sin(player.yaw) * 0.6,
         z: player.pos.z + Math.cos(player.yaw) * 0.6
@@ -1293,7 +1294,7 @@ export function FlatlineGame() {
         null,
         def.projectile.splash
       )
-      const sprite = spriteFor(art.projTex[kind][0], kind === 'bigcheese' ? 0.9 : 0.5)
+      const sprite = spriteFor(art.projTex[kind][0], kind === 'megabrick' ? 0.9 : 0.5)
       sprite.position.set(origin.x, 1.2, origin.z)
       threeRef.current?.scene.add(sprite)
       world.projectiles.set(projectile.id, { p: projectile, sprite })
@@ -1301,7 +1302,7 @@ export function FlatlineGame() {
     }
     for (let i = 0; i < def.pellets; i++) {
       // Triangular spread like doom's twin P_Random calls; the pistol and
-      // chatter gun fire their first tapped shot perfectly straight.
+      // gatling gun fire their first tapped shot perfectly straight.
       const accurate = def.accurateFirstShot && wasFirstShot && def.pellets === 1
       const offset = accurate ? 0 : (world.rng() - world.rng()) * def.spreadRad
       const damage = Math.round(rollDamage(world.rng, def.dice) * mult)
@@ -1493,7 +1494,7 @@ export function FlatlineGame() {
           }
         } else if (event.type === 'projectile') {
           const art = artRef.current as Art
-          const kind: ProjectileArt = enemy.kind === 'fatcat' ? 'ember' : 'knife'
+          const kind: ProjectileArt = enemy.kind === 'golem' ? 'fireball' : 'bolt'
           const damage = rollDamage(world.rng, event.dice)
           const origin = {
             x: enemy.pos.x + Math.sin(event.angle) * (def.radiusM + 0.3),
@@ -1604,19 +1605,19 @@ export function FlatlineGame() {
           vitals: player.vitals,
           ammo: player.ammo,
           ammoMax: player.ammoMax,
-          cheddar: player.cheddarRun,
+          studs: player.studsRun,
           hasVaultKey: player.hasVaultKey
         }
-        const result = applyPickup(pickup.kind, pickupState, world.config.cheddarMult)
+        const result = applyPickup(pickup.kind, pickupState, world.config.studsMult)
         if (!result.consumed) {
           continue
         }
         player.vitals = result.state.vitals
         player.ammo = result.state.ammo
-        player.cheddarRun = result.state.cheddar
+        player.studsRun = result.state.studs
         player.hasVaultKey = result.state.hasVaultKey
         player.pickupFlash = Math.min(1, player.pickupFlash + 0.4)
-        if (pickup.kind === 'coinSmall' || pickup.kind === 'coinPile') {
+        if (pickup.kind === 'stud' || pickup.kind === 'studPile') {
           sfxRef.current?.coin()
         } else if (pickup.kind === 'vaultKey') {
           sfxRef.current?.keyPickup()
@@ -1673,7 +1674,7 @@ export function FlatlineGame() {
         ammoInWeapon: def.ammoType === 'none' ? null : player.ammo[def.ammoType],
         weapon: player.weapon,
         owned: [...player.owned],
-        cheddar: player.cheddarRun,
+        studs: player.studsRun,
         ring: Math.max(Math.abs(pcx), Math.abs(pcz)),
         hasKey: player.hasVaultKey
       })
@@ -1700,7 +1701,7 @@ export function FlatlineGame() {
       lastFilmDrawRef.current = now
       const ctx = filmCanvas.getContext('2d')
       if (ctx) {
-        drawFilmFrame(ctx, grain, filmCanvas.width, filmCanvas.height, FILM_PRESETS[filmRef.current])
+        drawPostFrame(ctx, grain, filmCanvas.width, filmCanvas.height, POST_PRESETS[filmRef.current])
       }
     }
 
@@ -1835,17 +1836,17 @@ export function FlatlineGame() {
 
   // ================= RENDER =================
 
-  const filmSettings = FILM_PRESETS[film]
+  const filmSettings = POST_PRESETS[film]
   const world = worldRef.current
 
   const settingsRow = (
     <div className="title-settings">
       <label>
-        Film:{' '}
-        <select value={film} onChange={(e) => changeFilm(e.target.value as FilmPreset)} data-testid="film-select">
-          <option value="studio">Studio Cut</option>
-          <option value="directors">Director&apos;s Cut</option>
-          <option value="vintage">Vintage Cut</option>
+        Style:{' '}
+        <select value={film} onChange={(e) => changeFilm(e.target.value as PostPreset)} data-testid="style-select">
+          <option value="clean">Clean</option>
+          <option value="playful">Playful</option>
+          <option value="retro">Retro</option>
         </select>
       </label>
       <button type="button" className="ghost" onClick={() => setMuted((m) => !m)} aria-pressed={muted}>
@@ -1860,9 +1861,9 @@ export function FlatlineGame() {
         ref={mountRef}
         className="render-root"
         data-testid="render-root"
-        style={{ filter: diffusionFilter(filmSettings) }}
+        style={{ filter: plasticFilter(filmSettings) }}
       />
-      <canvas ref={filmCanvasRef} className="film-overlay" data-testid="film-overlay" />
+      <canvas ref={filmCanvasRef} className="post-overlay" data-testid="post-overlay" />
 
       {screen === 'playing' && (
         <>
@@ -1962,17 +1963,17 @@ export function FlatlineGame() {
                 </span>
                 <span className="hud-label">ARMOR</span>
               </div>
-              <div className="hud-cell hud-cheddar">
-                <span className="hud-big" data-testid="hud-cheddar">
-                  {hud.cheddar}
+              <div className="hud-cell hud-studs">
+                <span className="hud-big" data-testid="hud-studs">
+                  {hud.studs}
                 </span>
-                <span className="hud-label">CHEDDAR</span>
+                <span className="hud-label">STUDS</span>
               </div>
               <div className="hud-cell hud-depth">
                 <span className="hud-big" data-testid="hud-depth">
                   {hud.ring}
                 </span>
-                <span className="hud-label">BLOCKS OUT{hud.hasKey ? ' [KEY]' : ''}</span>
+                <span className="hud-label">DEPTH{hud.hasKey ? ' [KEY]' : ''}</span>
               </div>
             </div>
           )}
@@ -1982,25 +1983,26 @@ export function FlatlineGame() {
       {screen === 'title' && (
         <div className="screen title-screen" data-testid="title-screen">
           <div className="title-card">
-            <p className="title-over">FLATLINE DETECTIVE AGENCY presents</p>
-            <h1 className="title-main">FLATLINE</h1>
-            <p className="title-sub">a hard-boiled mouse story</p>
+            <p className="title-over">a box of bricks presents</p>
+            <h1 className="title-main">LETGO</h1>
+            <p className="title-sub">an endless brick dungeon</p>
             <p className="title-tag">
-              The city is a maze and every block wants you dead. Go out, get paid, get flattened, get stronger.
+              The dungeon rebuilds itself around you and everything in it wants you in pieces. Dive in, grab studs,
+              get smashed, build back stronger.
             </p>
             <div className="title-buttons">
               <button type="button" className="start-run" onClick={startRun} data-testid="start-run">
-                New Case
+                New Run
               </button>
-              <button type="button" className="ghost" onClick={() => setScreen('office')} data-testid="go-office">
-                The Office
+              <button type="button" className="ghost" onClick={() => setScreen('workshop')} data-testid="go-office">
+                The Workshop
               </button>
             </div>
             {settingsRow}
             <p className="controls-hint">
               {isTouch
                 ? 'Left thumb moves. Right thumb aims, tap to shoot. Hold FIRE to spray. USE opens doors.'
-                : 'WASD move. Mouse aim. Click shoot. E opens doors. Tab holds the map. 1-7 swap iron.'}
+                : 'WASD move. Mouse aim. Click shoot. E opens doors. Tab holds the map. 1-7 swap bricks.'}
             </p>
           </div>
         </div>
@@ -2009,39 +2011,39 @@ export function FlatlineGame() {
       {screen === 'dead' && summary && (
         <div className="screen death-screen" data-testid="death-screen">
           <div className="title-card">
-            <h1 className="death-title">FLATLINED</h1>
+            <h1 className="death-title">IN PIECES</h1>
             <div className="death-summary" data-testid="run-summary">
               <div>
                 <span className="hud-big">{summary.ring}</span>
-                <span className="hud-label">blocks out</span>
+                <span className="hud-label">depth reached</span>
               </div>
               <div>
                 <span className="hud-big">{summary.kills}</span>
-                <span className="hud-label">goons dropped</span>
+                <span className="hud-label">monsters smashed</span>
               </div>
               <div>
-                <span className="hud-big">{summary.cheddar}</span>
-                <span className="hud-label">cheddar earned</span>
+                <span className="hud-big">{summary.studs}</span>
+                <span className="hud-label">studs collected</span>
               </div>
               <div>
                 <span className="hud-big">{summary.seconds}s</span>
-                <span className="hud-label">on the case</span>
+                <span className="hud-label">in the dungeon</span>
               </div>
             </div>
-            <p className="title-tag">The earnings made it back to the office. You, eventually.</p>
-            <button type="button" className="start-run" onClick={() => setScreen('office')} data-testid="back-to-office">
-              Back to the Office
+            <p className="title-tag">Your studs made it back to the Workshop. You, in a bin of loose parts.</p>
+            <button type="button" className="start-run" onClick={() => setScreen('workshop')} data-testid="back-to-office">
+              Back to the Workshop
             </button>
           </div>
         </div>
       )}
 
-      {screen === 'office' && <OfficeScreen meta={meta} onMetaChange={saveMeta} onStartRun={startRun} />}
+      {screen === 'workshop' && <WorkshopScreen meta={meta} onMetaChange={saveMeta} onStartRun={startRun} />}
 
       {screen === 'playing' && paused && (
         <div className="screen pause-screen" data-testid="pause-menu">
           <div className="title-card">
-            <h1>INTERMISSION</h1>
+            <h1>PAUSED</h1>
             <div className="title-buttons">
               <button
                 type="button"
@@ -2070,7 +2072,7 @@ export function FlatlineGame() {
                 }}
                 data-testid="call-it-a-night"
               >
-                Call It a Night
+                Pack It Up
               </button>
             </div>
             {settingsRow}
@@ -2133,11 +2135,14 @@ function StickVisual({ stick, label }: { stick: JoystickState; label: string }) 
 }
 
 function setupSceneBasics(scene: THREE.Scene) {
-  scene.background = new THREE.Color(0x0a0a0a)
-  scene.fog = new THREE.Fog(0x0a0a0a, 6, 34)
-  const hemi = new THREE.HemisphereLight(0xffffff, 0x555555, 1.15)
+  // A bright toy-box interior: light haze in the distance, punchy fill light
+  // so the molded plastic keeps its saturation.
+  scene.background = new THREE.Color(0x243247)
+  scene.fog = new THREE.Fog(0x243247, 8, 42)
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x9fb2c9, 1.5)
   scene.add(hemi)
-  const dir = new THREE.DirectionalLight(0xffffff, 0.6)
+  const dir = new THREE.DirectionalLight(0xfff4d8, 0.75)
   dir.position.set(0.6, 1, 0.35)
   scene.add(dir)
+  scene.add(new THREE.AmbientLight(0xffffff, 0.35))
 }

@@ -1,6 +1,6 @@
-// Procedural WebAudio sound: no assets, everything synthesized. The mix
-// leans 1930s: gunshots are dry noise bursts, hurt cues are cartoon squeaks,
-// and the ambience is a vinyl-crackle loop with a lazy swing bass.
+// Procedural WebAudio sound: no assets, everything synthesized. The mix is
+// bright and toy-like: blasters are snappy noise bursts, hurt cues are
+// cartoon squeaks, and the ambience is a cheerful bouncing chiptune loop.
 
 import type { WeaponId } from '@/game/weapons'
 
@@ -99,26 +99,26 @@ export class Sfx {
 
   fire(weapon: WeaponId) {
     switch (weapon) {
-      case 'paws':
+      case 'claws':
         this.burst(0.08, 500, 0.25)
         break
-      case 'snub':
+      case 'studgun':
         this.burst(0.14, 1800, 0.5)
         break
-      case 'scattergun':
+      case 'scatter':
         this.burst(0.3, 900, 0.7)
         break
-      case 'chatter':
+      case 'gatling':
         this.burst(0.07, 2200, 0.35)
         break
-      case 'lobber':
+      case 'dynamite':
         this.burst(0.12, 600, 0.4)
         this.sweep(300, 80, 0.3, 0.1, 'triangle')
         break
       case 'raygun':
         this.sweep(1400, 300, 0.16, 0.2, 'sawtooth')
         break
-      case 'bigcheese':
+      case 'megabrick':
         this.sweep(90, 700, 0.5, 0.3, 'sawtooth')
         this.burst(0.5, 400, 0.4)
         break
@@ -164,7 +164,8 @@ export class Sfx {
     this.sweep(900, 1800, 0.3, 0.2, 'triangle')
   }
 
-  // Ambient layer: vinyl crackle plus a lazy two-note swing bass.
+  // Ambient layer: a soft pad plus a bouncy major-key bass line that skips
+  // along like a toy on parade.
   startAmbience() {
     const ctx = this.ensure()
     if (!ctx || !this.master || this.crackleSource) {
@@ -173,24 +174,25 @@ export class Sfx {
     const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate)
     const data = buffer.getChannelData(0)
     for (let i = 0; i < data.length; i++) {
-      data[i] = Math.random() < 0.001 ? (Math.random() * 2 - 1) * 0.6 : (Math.random() * 2 - 1) * 0.015
+      data[i] = (Math.random() * 2 - 1) * 0.006
     }
     const source = ctx.createBufferSource()
     source.buffer = buffer
     source.loop = true
     const gain = ctx.createGain()
-    gain.gain.value = 0.5
+    gain.gain.value = 0.4
     source.connect(gain).connect(this.master)
     source.start()
     this.crackleSource = source
 
-    const bassNotes = [82.4, 82.4, 110, 98, 82.4, 73.4, 110, 98]
+    // A cheerful C-major skip: root, third, fifth, octave and back.
+    const bassNotes = [130.8, 164.8, 196, 261.6, 196, 164.8, 146.8, 174.6]
     let step = 0
     const playStep = () => {
-      const swing = step % 2 === 0 ? 0.42 : 0.28
-      this.sweep(bassNotes[step % bassNotes.length], bassNotes[step % bassNotes.length] * 0.99, 0.3, 0.05, 'sine')
+      const bounce = step % 2 === 0 ? 0.34 : 0.24
+      this.sweep(bassNotes[step % bassNotes.length], bassNotes[step % bassNotes.length] * 1.005, 0.26, 0.05, 'triangle')
       step++
-      this.bassTimer = window.setTimeout(playStep, swing * 1000)
+      this.bassTimer = window.setTimeout(playStep, bounce * 1000)
     }
     playStep()
   }

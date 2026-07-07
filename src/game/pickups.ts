@@ -1,7 +1,7 @@
 // Pickup effects. Values follow Doom's item table: small heal +10, big heal
-// +25 (capped at max HP), vest sets 100 armor at 1/3 absorb, trench armor
-// sets 200 at 1/2 absorb. Coins follow the Rogue Legacy denominations:
-// small 10, pile 100.
+// +25 (capped at max HP), vest sets 100 armor at 1/3 absorb, heavy armor
+// sets 200 at 1/2 absorb. Studs follow the Rogue Legacy denominations:
+// single 10, pile 100.
 
 import type { PickupKind } from './dungeon'
 import type { PlayerVitals } from './combat'
@@ -14,7 +14,7 @@ export type PickupPlayerState = {
   vitals: PlayerVitals
   ammo: AmmoState
   ammoMax: AmmoState
-  cheddar: number
+  studs: number
   hasVaultKey: boolean
 }
 
@@ -25,25 +25,25 @@ export type PickupResult = {
   consumed: boolean
 }
 
-export function applyPickup(kind: PickupKind, state: PickupPlayerState, cheddarMult = 1): PickupResult {
+export function applyPickup(kind: PickupKind, state: PickupPlayerState, studsMult = 1): PickupResult {
   const { vitals, ammo, ammoMax } = state
   switch (kind) {
-    case 'coinSmall': {
-      const gain = Math.round(COIN_SMALL_VALUE * cheddarMult)
-      return { state: { ...state, cheddar: state.cheddar + gain }, consumed: true }
+    case 'stud': {
+      const gain = Math.round(COIN_SMALL_VALUE * studsMult)
+      return { state: { ...state, studs: state.studs + gain }, consumed: true }
     }
-    case 'coinPile': {
-      const gain = Math.round(COIN_PILE_VALUE * cheddarMult)
-      return { state: { ...state, cheddar: state.cheddar + gain }, consumed: true }
+    case 'studPile': {
+      const gain = Math.round(COIN_PILE_VALUE * studsMult)
+      return { state: { ...state, studs: state.studs + gain }, consumed: true }
     }
-    case 'cheeseBit': {
+    case 'heartSmall': {
       if (vitals.hp >= vitals.maxHp) {
         return { state, consumed: false }
       }
       const hp = Math.min(vitals.maxHp, vitals.hp + 10)
       return { state: { ...state, vitals: { ...vitals, hp } }, consumed: true }
     }
-    case 'cheeseWheel': {
+    case 'heartBig': {
       if (vitals.hp >= vitals.maxHp) {
         return { state, consumed: false }
       }
@@ -59,12 +59,12 @@ export function applyPickup(kind: PickupKind, state: PickupPlayerState, cheddarM
         consumed: true
       }
     }
-    case 'trenchArmor': {
+    case 'heavyArmor': {
       if (vitals.armor >= 200) {
         return { state, consumed: false }
       }
       return {
-        state: { ...state, vitals: { ...vitals, armor: 200, armorClass: 'trench' } },
+        state: { ...state, vitals: { ...vitals, armor: 200, armorClass: 'heavy' } },
         consumed: true
       }
     }

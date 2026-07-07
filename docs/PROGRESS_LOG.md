@@ -18,6 +18,16 @@ Format for each slice:
 
 Pre-spiral history (94 commits across 2026-04-30 to 2026-05-02) is preserved in `docs/_archive/2026-05-03-pre-spiral/PROGRESS_LOG.md`. New entries are append-only from this slice.
 
+## 2026-07-07, Theme reboot: Flatline mouse noir becomes LetGo brick dungeon
+
+- Branch: `letgo-brick-reboot`
+- PR: #TBD
+- Changed: reskinned the entire presentation and copy layer of the game from 1930s mouse-detective noir to a bright plastic-brick minifig dungeon, keeping every Doom mechanic and the Rogue Legacy meta progression intact. New `src/art/brick.ts` (plastic-slab gloss, studs, tubes, starbursts, loose-piece debris, claw hands, minifig heads and faces) replaces the grayscale `ink.ts`; `src/art/post.ts` (sparkle + soft vignette + saturating CSS filter) replaces the grayscale film pass `film.ts`. `textures.ts` now draws classic/castle/space brick walls, a green studded baseplate floor, and a tube ceiling; `sprites.ts` renders five minifig monsters (skeleton, guard, wizard, knight, brick-built golem) plus brick pickups, projectiles, and come-apart death scatters; `viewmodel.ts` draws claw hands and molded brick weapons; `mugshot.ts` is a cracking minifig head. Game identifiers renamed throughout the pure logic (`src/game/*`): enemy kinds, weapon ids and names, pickup kinds, the currency (cheddar becomes studs), armor class (trench becomes heavy), projectile art. Components renamed `FlatlineGame.tsx` -> `LetGoGame.tsx` and `OfficeScreen.tsx` -> `WorkshopScreen.tsx`; the Office is now the Workshop, the Case Board the Build Plan, the Fence the Tinkerer, relics are gadgets; board-node and relic display names retitled while their persisted ids are unchanged. `app/globals.css` reskinned to the saturated toy palette; `sfx.ts` ambience swapped from vinyl-crackle swing bass to a bright bouncing major-key loop; scene lighting/fog brightened. Storage keys bumped to `letgo.meta.v1` / `letgo.style.v1`; test hook events renamed to the `letgo:` namespace.
+- Verification: dash check (clean), `git diff --check`, `npm run lint` (0 errors, 2 pre-existing exhaustive-deps warnings), `npx tsc --noEmit` (clean), `npm test` (92/92), `npm run build` (success), `npx playwright test` (10 passed, 10 project-scoped skips). Title, in-run, and Workshop screens verified visually against captured screenshots.
+- Assumptions: node/relic ids and the RelicId/relics schema names are kept internal for save compatibility while only display strings change; enemy/weapon stat tables, AI, dungeon generation, and meta math are untouched (this is a skin, not a balance pass).
+- GDD coverage: build log entries appended to `docs/gdd/01-vision.md`, `02-design-pillars.md`, `04-core-loop.md`, `07-weapons.md`, `09-enemies.md`, `11-pickups.md`, `12-meta-progression.md`, `13-relics.md`, `14-art-direction.md`, `15-film-post.md`, `16-hud-mugshot.md`, `18-audio.md`. Implementation refs updated in `docs/GDD_COVERAGE.json` for renamed files.
+- Followups: none new.
+
 ## 2026-07-07, Mobile touch controls and phone-width HUD (closes F-025)
 
 - Branch: `claude/doom-roguelike-procedural-8614yx`

@@ -17,14 +17,14 @@ describe('applyPlayerDamage', () => {
     expect(v.armor).toBe(90)
   })
 
-  it('trench armor absorbs half', () => {
-    const v = applyPlayerDamage(vitals({ armor: 200, armorClass: 'trench' }), 30)
+  it('heavy armor absorbs half', () => {
+    const v = applyPlayerDamage(vitals({ armor: 200, armorClass: 'heavy' }), 30)
     expect(v.hp).toBe(85)
     expect(v.armor).toBe(185)
   })
 
   it('never absorbs more than remaining armor and downgrades class at zero', () => {
-    const v = applyPlayerDamage(vitals({ armor: 3, armorClass: 'trench' }), 30)
+    const v = applyPlayerDamage(vitals({ armor: 3, armorClass: 'heavy' }), 30)
     expect(v.armor).toBe(0)
     expect(v.hp).toBe(73)
     expect(v.armorClass).toBe('none')

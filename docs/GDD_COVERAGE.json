@@ -11,7 +11,7 @@
       "status": "out_of_scope",
       "implementationRefs": [
         "app/page.tsx",
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [
         "tests/smoke.spec.ts"
@@ -25,7 +25,7 @@
       "gddRef": "docs/gdd/02-design-pillars.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [],
       "followupRefs": [],
@@ -71,7 +71,7 @@
       "gddRef": "docs/gdd/05-core-loop.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [
         "tests/smoke.spec.ts"
@@ -85,7 +85,7 @@
       "gddRef": "docs/gdd/06-mode-endless.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game/scoring.ts",
         "src/game/spawnDirector.ts"
       ],
@@ -139,7 +139,7 @@
       "gddRef": "docs/gdd/09-camera.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [
         "tests/smoke.spec.ts"
@@ -156,7 +156,7 @@
         "src/game/movement.ts",
         "src/game/virtualJoystick.ts",
         "src/game/dash.ts",
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "app/globals.css"
       ],
       "testRefs": [
@@ -190,7 +190,7 @@
       "gddRef": "docs/gdd/12-art-direction.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "public/assets/enemies",
         "public/assets/weapons"
       ],
@@ -305,7 +305,7 @@
       "gddRef": "docs/gdd/19-arena-shape.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [
         "tests/smoke.spec.ts"
@@ -319,7 +319,7 @@
       "gddRef": "docs/gdd/20-arena-landmarks.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game/arenaLandmarks.ts"
       ],
       "testRefs": [
@@ -334,7 +334,7 @@
       "gddRef": "docs/gdd/21-arena-cover.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "scripts/generate-cover-billboards.mjs",
         "public/assets/cover",
         "src/game/coverCollision.ts",
@@ -388,7 +388,7 @@
         "src/game/weapons.ts",
         "src/game/shooting.ts",
         "src/game/knockback.ts",
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [
         "src/game/weapons.test.ts",
@@ -422,7 +422,7 @@
       "implementationRefs": [
         "public/assets/weapons",
         "scripts/generate-weapon-sprites.mjs",
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game/muzzleFlash.ts",
         "src/game/weaponRecoil.ts",
         "app/globals.css"
@@ -506,7 +506,7 @@
       "implementationRefs": [
         "src/game/enemies.ts",
         "src/game/spitterProjectile.ts",
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "scripts/generate-enemy-variant-atlases.mjs",
         "public/assets/enemies/spitter"
       ],
@@ -540,7 +540,7 @@
       "gddRef": "docs/gdd/33-pickup-health.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game/healthPickupTier.ts"
       ],
       "testRefs": [
@@ -556,7 +556,7 @@
       "status": "out_of_scope",
       "implementationRefs": [
         "src/game/weapons.ts",
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [],
       "followupRefs": [],
@@ -571,7 +571,7 @@
         "src/game/scoreToken.ts",
         "src/game/scoreTokenDrop.ts",
         "src/game/scoring.ts",
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [
         "src/game/scoreToken.test.ts",
@@ -587,7 +587,7 @@
       "gddRef": "docs/gdd/36-pickup-readability.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game/pickupReadability.ts",
         "src/game/pickupLoopCue.ts"
       ],
@@ -618,7 +618,7 @@
       "gddRef": "docs/gdd/38-run-summary.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/lib/sharedLeaderboard.ts",
         "src/lib/leaderboard.ts"
       ],
@@ -635,7 +635,7 @@
       "gddRef": "docs/gdd/39-hud.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game/damageDirection.ts",
         "src/game/hudJitter.ts",
         "scripts/generate-hud-icons.mjs",
@@ -661,7 +661,7 @@
       "gddRef": "docs/gdd/40-audio.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game/enemyWindupCue.ts",
         "src/game/enemyDeathCue.ts",
         "src/game/enemyHurtCue.ts",
@@ -724,7 +724,7 @@
       "gddRef": "docs/gdd/42-source-layout.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game",
         "src/lib"
       ],
@@ -738,7 +738,7 @@
       "gddRef": "docs/gdd/43-game-loop-architecture.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game"
       ],
       "testRefs": [
@@ -773,7 +773,7 @@
       "implementationRefs": [
         "src/game/shooting.ts",
         "src/game/muzzleFlash.ts",
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "app/globals.css"
       ],
       "testRefs": [
@@ -792,7 +792,7 @@
         "src/game/billboard.ts",
         "src/game/spriteAtlas.ts",
         "src/game/enemyHurtFlash.ts",
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [
         "src/game/billboard.test.ts",
@@ -808,7 +808,7 @@
       "gddRef": "docs/gdd/47-arena-mutations.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game/spawnDirector.ts",
         "src/game/doorState.ts",
         "src/game/doorCue.ts",
@@ -832,7 +832,7 @@
       "gddRef": "docs/gdd/48-mvp-scope.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game",
         "src/lib",
         "app"
@@ -849,7 +849,7 @@
       "gddRef": "docs/gdd/49-vertical-slices.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game",
         "src/lib",
         "app"
@@ -896,7 +896,7 @@
       "gddRef": "docs/gdd/51-performance-budget.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [],
       "followupRefs": [],
@@ -953,7 +953,7 @@
       "gddRef": "docs/gdd/55-recommended-first-build.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [
         "tests/smoke.spec.ts"
@@ -967,7 +967,7 @@
       "gddRef": "docs/gdd/56-post-mvp-feel-pass.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game/movement.ts",
         "src/game/shooting.ts",
         "src/game/muzzleFlash.ts",
@@ -1040,7 +1040,7 @@
       "gddRef": "docs/gdd/59-post-mvp-room-v1.md",
       "status": "out_of_scope",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game/doorState.ts",
         "src/game/doorCue.ts",
         "src/game/arenaLandmarks.ts",
@@ -1081,7 +1081,7 @@
       "status": "out_of_scope",
       "implementationRefs": [
         "src/game/scoring.ts",
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "app/globals.css"
       ],
       "testRefs": [
@@ -1148,7 +1148,7 @@
         "src/game/upgradeTree.ts",
         "src/lib/upgradeWallet.ts",
         "src/game/weapons.ts",
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "app/globals.css",
         "src/lib/playerId.ts",
         "src/lib/sharedUpgradeWallet.ts",
@@ -1180,7 +1180,7 @@
       "gddRef": "docs/gdd/01-vision.md",
       "status": "done",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [
         "tests/smoke.spec.ts"
@@ -1208,7 +1208,7 @@
         "app/page.tsx",
         "app/layout.tsx",
         "src/game/touch.ts",
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "app/globals.css"
       ],
       "testRefs": [
@@ -1227,7 +1227,7 @@
       "gddRef": "docs/gdd/04-core-loop.md",
       "status": "done",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/game/meta.ts"
       ],
       "testRefs": [
@@ -1342,7 +1342,7 @@
       "status": "done",
       "implementationRefs": [
         "src/game/meta.ts",
-        "src/components/OfficeScreen.tsx"
+        "src/components/WorkshopScreen.tsx"
       ],
       "testRefs": [
         "src/game/meta.test.ts",
@@ -1369,7 +1369,7 @@
       "gddRef": "docs/gdd/14-art-direction.md",
       "status": "done",
       "implementationRefs": [
-        "src/art/ink.ts",
+        "src/art/brick.ts",
         "src/art/textures.ts",
         "src/art/sprites.ts",
         "src/art/viewmodel.ts"
@@ -1385,7 +1385,7 @@
       "gddRef": "docs/gdd/15-film-post.md",
       "status": "done",
       "implementationRefs": [
-        "src/art/film.ts"
+        "src/art/post.ts"
       ],
       "testRefs": [
         "tests/film-motion.spec.ts"
@@ -1398,7 +1398,7 @@
       "gddRef": "docs/gdd/16-hud-mugshot.md",
       "status": "done",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
+        "src/components/LetGoGame.tsx",
         "src/art/mugshot.ts"
       ],
       "testRefs": [
@@ -1412,7 +1412,7 @@
       "gddRef": "docs/gdd/17-automap.md",
       "status": "done",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [],
       "followupRefs": []
@@ -1436,8 +1436,8 @@
       "gddRef": "docs/gdd/19-screen-flow.md",
       "status": "done",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx",
-        "src/components/OfficeScreen.tsx"
+        "src/components/LetGoGame.tsx",
+        "src/components/WorkshopScreen.tsx"
       ],
       "testRefs": [
         "tests/smoke.spec.ts"
@@ -1480,7 +1480,7 @@
       "gddRef": "docs/gdd/22-performance.md",
       "status": "partial",
       "implementationRefs": [
-        "src/components/FlatlineGame.tsx"
+        "src/components/LetGoGame.tsx"
       ],
       "testRefs": [],
       "followupRefs": [

@@ -1,8 +1,8 @@
 // Damage application rules, straight from Doom: armor soaks a fraction of
-// incoming damage (1/3 for the vest, 1/2 for the trench armor) and is
+// incoming damage (1/3 for the vest, 1/2 for the heavy armor) and is
 // consumed by the amount it absorbed.
 
-export type ArmorClass = 'none' | 'vest' | 'trench'
+export type ArmorClass = 'none' | 'vest' | 'heavy'
 
 export type PlayerVitals = {
   hp: number
@@ -12,7 +12,7 @@ export type PlayerVitals = {
 }
 
 export function absorbFraction(armorClass: ArmorClass): number {
-  if (armorClass === 'trench') {
+  if (armorClass === 'heavy') {
     return 1 / 2
   }
   if (armorClass === 'vest') {

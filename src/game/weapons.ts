@@ -1,8 +1,8 @@
 // The arsenal. Numbers follow original Doom's weapon tables (damage dice,
 // cycle times in 35-tic seconds, pellet counts, spread) with 32 map units
-// to the meter, re-themed for a 1930s cartoon noir.
+// to the meter, re-themed as a box of plastic brick weaponry.
 
-export type WeaponId = 'paws' | 'snub' | 'scattergun' | 'chatter' | 'lobber' | 'raygun' | 'bigcheese'
+export type WeaponId = 'claws' | 'studgun' | 'scatter' | 'gatling' | 'dynamite' | 'raygun' | 'megabrick'
 
 export type AmmoType = 'none' | 'bullets' | 'shells' | 'tnt' | 'cells'
 
@@ -29,9 +29,9 @@ export type WeaponDef = {
 const SPREAD = 0.0977 // 5.6 degrees, Doom's hitscan spread half-angle
 
 export const WEAPONS: Record<WeaponId, WeaponDef> = {
-  paws: {
-    id: 'paws',
-    name: 'Bare Paws',
+  claws: {
+    id: 'claws',
+    name: 'Bare Claws',
     slot: 1,
     ammoType: 'none',
     ammoPerShot: 0,
@@ -43,9 +43,9 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     auto: true,
     melee: { rangeM: 2 }
   },
-  snub: {
-    id: 'snub',
-    name: 'Snubnose',
+  studgun: {
+    id: 'studgun',
+    name: 'Stud Shooter',
     slot: 2,
     ammoType: 'bullets',
     ammoPerShot: 1,
@@ -56,9 +56,9 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     accurateFirstShot: true,
     auto: true
   },
-  scattergun: {
-    id: 'scattergun',
-    name: 'Scattergun',
+  scatter: {
+    id: 'scatter',
+    name: 'Scatter Blaster',
     slot: 3,
     ammoType: 'shells',
     ammoPerShot: 1,
@@ -69,9 +69,9 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     accurateFirstShot: false,
     auto: true
   },
-  chatter: {
-    id: 'chatter',
-    name: 'Chatter Gun',
+  gatling: {
+    id: 'gatling',
+    name: 'Gatling Stud',
     slot: 4,
     ammoType: 'bullets',
     ammoPerShot: 1,
@@ -82,9 +82,9 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     accurateFirstShot: true,
     auto: true
   },
-  lobber: {
-    id: 'lobber',
-    name: 'TNT Lobber',
+  dynamite: {
+    id: 'dynamite',
+    name: 'Dynamite',
     slot: 5,
     ammoType: 'tnt',
     ammoPerShot: 1,
@@ -98,7 +98,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
   },
   raygun: {
     id: 'raygun',
-    name: 'Ray-O-Matic',
+    name: 'Ray Blaster',
     slot: 6,
     ammoType: 'cells',
     ammoPerShot: 1,
@@ -110,9 +110,9 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     auto: true,
     projectile: { speedM: 27.3, radiusM: 0.25 }
   },
-  bigcheese: {
-    id: 'bigcheese',
-    name: 'Big Cheese',
+  megabrick: {
+    id: 'megabrick',
+    name: 'Mega Brick',
     slot: 7,
     ammoType: 'cells',
     ammoPerShot: 40,
@@ -156,15 +156,15 @@ export function spendAmmo(weapon: WeaponDef, ammo: AmmoState): AmmoState {
 }
 
 // The best weapon that has ammo, used when the current gun runs dry.
-// The Big Cheese is deliberately excluded: auto-switching into a 40-cell
+// The Mega Brick is deliberately excluded: auto-switching into a 40-cell
 // shot would waste the player's ultimate (Doom's auto-switch shuns the
 // BFG for the same reason).
 export function bestFallbackWeapon(owned: WeaponId[], ammo: AmmoState): WeaponId {
-  const preference: WeaponId[] = ['chatter', 'scattergun', 'raygun', 'snub', 'lobber', 'paws']
+  const preference: WeaponId[] = ['gatling', 'scatter', 'raygun', 'studgun', 'dynamite', 'claws']
   for (const id of preference) {
     if (owned.includes(id) && canFire(WEAPONS[id], ammo)) {
       return id
     }
   }
-  return 'paws'
+  return 'claws'
 }

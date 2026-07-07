@@ -35,17 +35,17 @@ export type DoorSpawn = {
   locked: boolean
 }
 
-export type EnemyKind = 'torpedo' | 'capo' | 'alleycat' | 'bruiser' | 'fatcat'
+export type EnemyKind = 'skeleton' | 'guard' | 'wizard' | 'knight' | 'golem'
 
 export type EnemySpawn = { gx: number; gz: number; kind: EnemyKind }
 
 export type PickupKind =
-  | 'coinSmall'
-  | 'coinPile'
-  | 'cheeseBit'
-  | 'cheeseWheel'
+  | 'stud'
+  | 'studPile'
+  | 'heartSmall'
+  | 'heartBig'
   | 'vest'
-  | 'trenchArmor'
+  | 'heavyArmor'
   | 'bullets'
   | 'shells'
   | 'tnt'
@@ -101,8 +101,7 @@ export function generateChunk(seed: number, cx: number, cz: number): Chunk {
 
   const rooms: Room[] = []
   if (isOrigin) {
-    // The starting room: the detective's office stairwell. Always centered,
-    // always safe.
+    // The starting room: the workshop entrance. Always centered, always safe.
     rooms.push({ x: 8, z: 8, w: 8, h: 8 })
   }
 
@@ -305,11 +304,11 @@ function placeDoors(
 // Enemy mix shifts with the ring (Chebyshev distance from the office chunk).
 export function enemyWeightsForRing(ring: number): Array<{ kind: EnemyKind; weight: number }> {
   return [
-    { kind: 'torpedo', weight: 10 },
-    { kind: 'capo', weight: ring >= 1 ? 6 : 0 },
-    { kind: 'alleycat', weight: ring >= 1 ? 4 + ring : 0 },
-    { kind: 'bruiser', weight: ring >= 2 ? 3 + ring : 0 },
-    { kind: 'fatcat', weight: ring >= 3 ? 1 + Math.floor(ring / 2) : 0 }
+    { kind: 'skeleton', weight: 10 },
+    { kind: 'guard', weight: ring >= 1 ? 6 : 0 },
+    { kind: 'wizard', weight: ring >= 1 ? 4 + ring : 0 },
+    { kind: 'knight', weight: ring >= 2 ? 3 + ring : 0 },
+    { kind: 'golem', weight: ring >= 3 ? 1 + Math.floor(ring / 2) : 0 }
   ]
 }
 
@@ -323,7 +322,7 @@ function pickEnemyKind(rng: Rng, ring: number): EnemyKind {
       return kind
     }
   }
-  return 'torpedo'
+  return 'skeleton'
 }
 
 function populate(
@@ -368,12 +367,12 @@ function populate(
       for (let i = 0; i < 4; i++) {
         const p = spot(room)
         if (p) {
-          pickups.push({ ...global(p), kind: 'coinPile' })
+          pickups.push({ ...global(p), kind: 'studPile' })
         }
       }
       const bonus = spot(room)
       if (bonus) {
-        pickups.push({ ...global(bonus), kind: rng() < 0.5 ? 'trenchArmor' : 'cheeseWheel' })
+        pickups.push({ ...global(bonus), kind: rng() < 0.5 ? 'heavyArmor' : 'heartBig' })
       }
       const ammo = spot(room)
       if (ammo) {
@@ -394,7 +393,7 @@ function populate(
     if (rng() < 0.5) {
       const p = spot(room)
       if (p) {
-        pickups.push({ ...global(p), kind: rng() < 0.7 ? 'cheeseBit' : 'cheeseWheel' })
+        pickups.push({ ...global(p), kind: rng() < 0.7 ? 'heartSmall' : 'heartBig' })
       }
     }
     if (rng() < 0.6) {
@@ -410,7 +409,7 @@ function populate(
     if (rng() < 0.35) {
       const p = spot(room)
       if (p) {
-        pickups.push({ ...global(p), kind: 'coinSmall' })
+        pickups.push({ ...global(p), kind: 'stud' })
       }
     }
     if (rng() < 0.12) {
@@ -439,7 +438,7 @@ function populate(
   }
 
   if (office) {
-    // A little starting ammo outside the office door.
+    // A little starting ammo outside the workshop door.
     pickups.push({ gx: cx * CHUNK_SIZE + office.x + 1, gz: cz * CHUNK_SIZE + office.z + 1, kind: 'bullets' })
   }
 }

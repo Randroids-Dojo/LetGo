@@ -1,15 +1,15 @@
-# Flatline
+# LetGo
 
-A hard-boiled mouse story. First-person Doom mechanics in an endless on-the-fly generated dungeon, drawn like a 1934 rubber-hose cartoon, with Rogue Legacy style meta progression: die, bank your cheddar, buy permanent upgrades at the office, hit the streets again.
+An endless brick dungeon. First-person Doom mechanics in an on-the-fly generated dungeon built entirely out of bright plastic bricks and minifigs, with Rogue Legacy style meta progression: get smashed, bank your studs, buy permanent upgrades at the Workshop, snap yourself back together and dive in again.
 
-This is the 2026-07 reboot. The previous single-arena game is archived under `docs/_archive/2026-07-07-pre-reboot/`.
+Live build: https://let-go-kappa.vercel.app/
 
 ## Play
 
 - WASD to move, mouse to aim (click grants pointer lock), click to shoot.
 - 1 to 7 swap weapons (or tap the HUD slots), E or Space opens doors, hold Tab for the automap, Escape pauses.
 - Touch devices: left thumb moves, right thumb aims, tap to shoot, hold FIRE to spray; on-screen USE, MAP, and pause buttons.
-- Death is progress: earnings convert to Case Board ranks, Armory unlocks, and one-run contraband. Unspent cheddar is taken as rent when the next run starts, so spend before you leave.
+- Death is progress: studs collected convert to Build Plan ranks, Armory unlocks, and one-run gadgets. Unspent studs get swept up by the cleanup crew when the next run starts, so spend before you dive.
 
 ## Development
 
@@ -37,7 +37,7 @@ All art and audio are generated at runtime (canvas 2D + WebAudio); the repo has 
 ## Source Layout
 
 - `src/game/`: pure simulation logic (dungeon generation, movement, combat, enemies, doors, pickups, meta progression), each module unit-tested.
-- `src/art/`: procedural rubber-hose drawing (ink primitives, textures, sprites, viewmodels, mugshot, film grain).
+- `src/art/`: procedural plastic-brick drawing (brick primitives, textures, minifig sprites, viewmodels, mugshot, sparkle post pass).
 - `src/audio/`: synthesized sound.
-- `src/components/`: the Three.js game component and the Office screen.
-- `tests/`: Playwright e2e (full loop, pause, persistence, film-motion QA).
+- `src/components/`: the Three.js game component and the Workshop screen.
+- `tests/`: Playwright e2e (full loop, pause, persistence, sparkle-motion QA).

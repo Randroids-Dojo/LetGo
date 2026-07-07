@@ -1,8 +1,8 @@
 'use client'
 
-// The Office: the between-runs hub. Three counters, Rogue Legacy style:
-// the Case Board (permanent stat tree with fog of war), the Armory
-// (weapon unlocks and tiers), and the Fence (one-run contraband).
+// The Workshop: the between-runs hub. Three counters, Rogue Legacy style:
+// the Build Plan (permanent stat tree with fog of war), the Armory (weapon
+// unlocks and tiers), and the Tinkerer (one-run gadgets).
 
 import { useMemo, useState } from 'react'
 import {
@@ -31,7 +31,7 @@ import { WEAPONS, WEAPON_ORDER } from '@/game/weapons'
 
 type Tab = 'board' | 'armory' | 'fence'
 
-export type OfficeScreenProps = {
+export type WorkshopScreenProps = {
   meta: MetaState
   onMetaChange: (meta: MetaState) => void
   onStartRun: () => void
@@ -40,7 +40,7 @@ export type OfficeScreenProps = {
 const CELL = 132
 const GAP = 18
 
-export function OfficeScreen({ meta, onMetaChange, onStartRun }: OfficeScreenProps) {
+export function WorkshopScreen({ meta, onMetaChange, onStartRun }: WorkshopScreenProps) {
   const [tab, setTab] = useState<Tab>('board')
   const visible = useMemo(() => visibleNodes(meta), [meta])
   const keep = keepFraction(meta)
@@ -53,21 +53,21 @@ export function OfficeScreen({ meta, onMetaChange, onStartRun }: OfficeScreenPro
   }
 
   return (
-    <div className="office" data-testid="office-screen">
+    <div className="office" data-testid="workshop-screen">
       <header className="office-header">
         <div>
-          <h1>The Office</h1>
-          <p className="office-sub">Case #{meta.totalDeaths + 1}. The city does not sleep. Neither do you.</p>
+          <h1>The Workshop</h1>
+          <p className="office-sub">Build #{meta.totalDeaths + 1}. Snap on some upgrades and dive back in.</p>
         </div>
-        <div className="office-wallet" data-testid="office-cheddar">
-          <span className="wallet-amount">{meta.cheddar}</span>
-          <span className="wallet-label">cheddar</span>
+        <div className="office-wallet" data-testid="workshop-studs">
+          <span className="wallet-amount">{meta.studs}</span>
+          <span className="wallet-label">studs</span>
         </div>
       </header>
 
       <nav className="office-tabs">
         <button type="button" className={tab === 'board' ? 'tab active' : 'tab'} onClick={() => setTab('board')}>
-          Case Board
+          Build Plan
         </button>
         <button
           type="button"
@@ -83,13 +83,13 @@ export function OfficeScreen({ meta, onMetaChange, onStartRun }: OfficeScreenPro
           onClick={() => setTab('fence')}
           data-testid="tab-fence"
         >
-          The Fence {fenceUnlocked(meta) ? '' : '(locked)'}
+          The Tinkerer {fenceUnlocked(meta) ? '' : '(locked)'}
         </button>
       </nav>
 
       <div className="office-body">
         {tab === 'board' && (
-          <div className="case-board" data-testid="case-board">
+          <div className="case-board" data-testid="build-plan">
             <svg className="board-strings" width={5 * (CELL + GAP)} height={4 * (CELL + GAP)}>
               {BOARD_NODES.flatMap((node) =>
                 nodeNeighbors(node)
@@ -124,7 +124,7 @@ export function OfficeScreen({ meta, onMetaChange, onStartRun }: OfficeScreenPro
               const rank = nodeRank(meta, node.id)
               const cost = nodeCost(meta, node.id)
               const maxed = cost === null
-              const affordable = cost !== null && meta.cheddar >= cost
+              const affordable = cost !== null && meta.studs >= cost
               return (
                 <div
                   key={node.id}
@@ -157,11 +157,11 @@ export function OfficeScreen({ meta, onMetaChange, onStartRun }: OfficeScreenPro
         {tab === 'armory' &&
           (armoryUnlocked(meta) ? (
             <div className="shop-grid" data-testid="armory">
-              {WEAPON_ORDER.filter((id) => id !== 'paws').map((id) => {
+              {WEAPON_ORDER.filter((id) => id !== 'claws').map((id) => {
                 const def = WEAPONS[id]
                 const owned = meta.weaponsUnlocked.includes(id)
                 const tier = meta.weaponTiers[id] ?? 0
-                const unlockCost = id === 'snub' ? null : weaponUnlockCost(meta, id as ArmoryWeapon)
+                const unlockCost = id === 'studgun' ? null : weaponUnlockCost(meta, id as ArmoryWeapon)
                 const tCost = tier < WEAPON_TIER_MAX ? weaponTierCost(meta, id, tier) : null
                 return (
                   <div key={id} className={`shop-card ${owned ? 'owned' : ''}`}>
@@ -171,7 +171,7 @@ export function OfficeScreen({ meta, onMetaChange, onStartRun }: OfficeScreenPro
                       <button
                         type="button"
                         className="buy"
-                        disabled={meta.cheddar < unlockCost}
+                        disabled={meta.studs < unlockCost}
                         onClick={() => apply(purchaseWeapon(meta, id as ArmoryWeapon))}
                         data-testid={`unlock-${id}`}
                       >
@@ -185,7 +185,7 @@ export function OfficeScreen({ meta, onMetaChange, onStartRun }: OfficeScreenPro
                           <button
                             type="button"
                             className="buy"
-                            disabled={meta.cheddar < tCost}
+                            disabled={meta.studs < tCost}
                             onClick={() => apply(purchaseWeaponTier(meta, id))}
                           >
                             +{Math.round(WEAPON_TIER_DAMAGE_PER_TIER * 100)}% damage: {tCost}
@@ -200,7 +200,7 @@ export function OfficeScreen({ meta, onMetaChange, onStartRun }: OfficeScreenPro
               })}
             </div>
           ) : (
-            <p className="locked-note">Buy the Gun Locker on the Case Board to open the Armory.</p>
+            <p className="locked-note">Buy the Parts Bin on the Build Plan to open the Armory.</p>
           ))}
 
         {tab === 'fence' &&
@@ -218,7 +218,7 @@ export function OfficeScreen({ meta, onMetaChange, onStartRun }: OfficeScreenPro
                       <button
                         type="button"
                         className="buy"
-                        disabled={meta.cheddar < relic.cost}
+                        disabled={meta.studs < relic.cost}
                         onClick={() => apply(purchaseRelic(meta, relic.id as RelicId))}
                         data-testid={`relic-${relic.id}`}
                       >
@@ -228,23 +228,23 @@ export function OfficeScreen({ meta, onMetaChange, onStartRun }: OfficeScreenPro
                   </div>
                 )
               })}
-              <p className="fence-note">Contraband is next-run only. No refunds. You did not buy it from me.</p>
+              <p className="fence-note">Gadgets are next-run only. Once you dive in, they snap into place.</p>
             </div>
           ) : (
-            <p className="locked-note">Buy The Fence on the Case Board to see the contraband.</p>
+            <p className="locked-note">Buy The Tinkerer on the Build Plan to see the gadgets.</p>
           ))}
       </div>
 
       <footer className="office-footer">
         <div className="rent-warning" data-testid="rent-warning">
           {keep >= 1
-            ? 'Your books are airtight. Every cent rides along.'
+            ? 'Your storage is airtight. Every last stud comes along.'
             : keep > 0
-              ? `The rent collector waits outside. You bank ${Math.round(keep * 100)}% of unspent cheddar when you leave.`
-              : 'The rent collector waits outside. Unspent cheddar is GONE when you hit the streets. Spend it.'}
+              ? `The cleanup crew is waiting. You keep ${Math.round(keep * 100)}% of unspent studs when you dive in.`
+              : 'The cleanup crew is waiting. Unspent studs get swept up when you dive in. Spend them.'}
         </div>
         <button type="button" className="start-run" onClick={onStartRun} data-testid="hit-the-streets">
-          Hit the Streets
+          Dive In
         </button>
       </footer>
     </div>

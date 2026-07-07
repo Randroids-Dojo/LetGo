@@ -1,8 +1,8 @@
 # AGENTS.md
 
-Shared rules for every agentic coding tool working in Flatline. Claude Code, Codex, Cursor, and any future agent: this file is mandatory reading before you write anything.
+Shared rules for every agentic coding tool working in LetGo. Claude Code, Codex, Cursor, and any future agent: this file is mandatory reading before you write anything.
 
-Project pitch: Desktop web Doom-like survival shooter with hand-drawn billboard enemies
+Project pitch: Desktop web Doom-like shooter set in an endless plastic-brick dungeon with minifig enemies and Rogue Legacy meta progression
 
 ---
 
@@ -20,7 +20,7 @@ If porting or quoting text from another source, strip all em-dashes from the por
 
 ## RULE 2: Read the GDD before making design decisions
 
-The Game Design Document at `docs/gdd/` is the source of truth for what Flatline is. Before proposing architecture, adding features, or changing data schemas, read it. If the GDD and your idea disagree, the GDD wins unless explicitly approved.
+The Game Design Document at `docs/gdd/` is the source of truth for what LetGo is. Before proposing architecture, adding features, or changing data schemas, read it. If the GDD and your idea disagree, the GDD wins unless explicitly approved.
 
 Before each implementation slice, read:
 
