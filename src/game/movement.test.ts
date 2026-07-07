@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyFriction, applyThrust, type MoveInput } from './movement'
+import { applyFriction, applyThrust, applyThrustAxes, type MoveInput } from './movement'
 
 const FORWARD: MoveInput = { forward: true, backward: false, left: false, right: false }
 const DIAGONAL: MoveInput = { forward: true, backward: false, left: false, right: true }
@@ -47,5 +47,46 @@ describe('doom movement model', () => {
     const momentum = simulate(NONE, 1)
     expect(momentum.x).toBe(0)
     expect(momentum.z).toBe(0)
+  })
+})
+
+describe('analog thrust axes', () => {
+  function simulateAxes(forwardAxis: number, strafeAxis: number, seconds: number) {
+    let momentum = { x: 0, z: 0 }
+    const dt = 1 / 60
+    for (let t = 0; t < seconds; t += dt) {
+      momentum = applyThrustAxes(momentum, 0, forwardAxis, strafeAxis, dt, 1)
+      momentum = applyFriction(momentum, dt)
+    }
+    return momentum
+  }
+
+  it('matches the boolean path at full deflection', () => {
+    const viaInput = simulate(FORWARD, 2)
+    const viaAxes = simulateAxes(1, 0, 2)
+    expect(viaAxes.x).toBeCloseTo(viaInput.x)
+    expect(viaAxes.z).toBeCloseTo(viaInput.z)
+  })
+
+  it('half deflection settles at roughly half speed', () => {
+    const full = Math.hypot(simulateAxes(1, 0, 3).x, simulateAxes(1, 0, 3).z)
+    const half = Math.hypot(simulateAxes(0.5, 0, 3).x, simulateAxes(0.5, 0, 3).z)
+    expect(half).toBeGreaterThan(full * 0.4)
+    expect(half).toBeLessThan(full * 0.6)
+  })
+
+  // Direction regression: the camera faces yaw + PI, so at yaw 0 forward
+  // is +z and the player's right is -x. Guards against strafe (and
+  // forward) being wired backwards.
+  it('moves forward along +z at yaw 0', () => {
+    const fwd = simulateAxes(1, 0, 0.5)
+    expect(fwd.z).toBeGreaterThan(0)
+    expect(Math.abs(fwd.x)).toBeLessThan(1e-9)
+  })
+
+  it('strafes right toward -x at yaw 0', () => {
+    const right = simulateAxes(0, 1, 0.5)
+    expect(right.x).toBeLessThan(0)
+    expect(Math.abs(right.z)).toBeLessThan(1e-9)
   })
 })

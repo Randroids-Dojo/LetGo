@@ -68,7 +68,7 @@ import {
   type MetaState,
   type RunConfig
 } from '@/game/meta'
-import { applyFriction, applyThrust } from '@/game/movement'
+import { applyFriction, applyThrustAxes } from '@/game/movement'
 import { applyPickup, type PickupPlayerState } from '@/game/pickups'
 import { createProjectile, resolveSplash, tickProjectile, type Projectile } from '@/game/projectiles'
 import { castRay, hasLineOfSight, rayPointDistance } from '@/game/raycast'
@@ -77,13 +77,13 @@ import {
   JOYSTICK_RADIUS,
   LOOK_PITCH_RATE,
   LOOK_YAW_RATE,
+  analogVectorFromStick,
   beginJoystick,
   createJoystick,
   endJoystick,
   isPhantomOrigin,
   isTapRelease,
   lookVectorFromStick,
-  moveInputFromStick,
   moveJoystick,
   readJoystick,
   rebaseOriginIfPhantom,
@@ -1358,15 +1358,26 @@ export function LetGoGame() {
         player.yaw -= touchLook.x * LOOK_YAW_RATE * dt
         player.pitch = clamp(player.pitch - touchLook.y * LOOK_PITCH_RATE * dt, -0.6, 0.6)
       }
+      // Keyboard contributes full-strength Doom axes (diagonal quirk kept);
+      // the stick contributes analog axes so walking speed tracks the
+      // thumb. Screen-up on the stick is negative y, which is forward.
       const keys = keysRef.current
-      const touchMove = moveInputFromStick(sticks.move)
-      const input = {
-        forward: keys.has('KeyW') || keys.has('ArrowUp') || touchMove.forward,
-        backward: keys.has('KeyS') || keys.has('ArrowDown') || touchMove.backward,
-        left: keys.has('KeyA') || keys.has('ArrowLeft') || touchMove.left,
-        right: keys.has('KeyD') || keys.has('ArrowRight') || touchMove.right
-      }
-      player.momentum = applyThrust(player.momentum, player.yaw, input, dt, world.config.speedMult)
+      const touchMove = analogVectorFromStick(sticks.move)
+      const forwardAxis = clamp(
+        Number(keys.has('KeyW') || keys.has('ArrowUp')) -
+          Number(keys.has('KeyS') || keys.has('ArrowDown')) -
+          touchMove.y,
+        -1,
+        1
+      )
+      const strafeAxis = clamp(
+        Number(keys.has('KeyD') || keys.has('ArrowRight')) -
+          Number(keys.has('KeyA') || keys.has('ArrowLeft')) +
+          touchMove.x,
+        -1,
+        1
+      )
+      player.momentum = applyThrustAxes(player.momentum, player.yaw, forwardAxis, strafeAxis, dt, world.config.speedMult)
       player.momentum = applyFriction(player.momentum, dt)
       const next = moveWithSliding(solidAt, player.pos, player.momentum.x * dt, player.momentum.z * dt, PLAYER_RADIUS)
       player.pos = next
