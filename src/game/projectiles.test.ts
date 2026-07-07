@@ -15,7 +15,7 @@ describe('tickProjectile', () => {
   })
 
   it('hits a target in its path', () => {
-    const p = createProjectile('knife', { x: 0, z: 1 }, Math.PI / 2, 10.9, 0.2, 12, false, 3)
+    const p = createProjectile('bolt', { x: 0, z: 1 }, Math.PI / 2, 10.9, 0.2, 12, false, 3)
     let hit = null
     for (let i = 0; i < 60 && !hit; i++) {
       hit = tickProjectile(p, 0.016, () => false, [{ id: 9, pos: { x: 4, z: 1 }, radiusM: 0.5 }])

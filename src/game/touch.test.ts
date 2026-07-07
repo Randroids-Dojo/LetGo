@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ANALOG_DEADZONE,
   JOYSTICK_RADIUS,
+  analogVectorFromStick,
   beginJoystick,
   createJoystick,
   isTapRelease,
   joystickMovedBeyond,
   lookVectorFromStick,
-  moveInputFromStick,
   moveJoystick,
   rebaseOriginIfPhantom,
   TAP_MAX_DRIFT_PX,
@@ -20,51 +21,54 @@ function stickAt(dx: number, dy: number) {
   return stick
 }
 
-describe('moveInputFromStick', () => {
-  it('returns no movement inside the deadzone', () => {
-    expect(moveInputFromStick(stickAt(5, -5))).toEqual({
-      forward: false,
-      backward: false,
-      left: false,
-      right: false
-    })
+describe('analogVectorFromStick', () => {
+  it('returns zero inside the radial deadzone', () => {
+    const px = ANALOG_DEADZONE * JOYSTICK_RADIUS * 0.9
+    expect(analogVectorFromStick(stickAt(px, 0))).toEqual({ x: 0, y: 0 })
+    expect(analogVectorFromStick(createJoystick())).toEqual({ x: 0, y: 0 })
   })
 
-  it('maps thumb up to forward and thumb right to strafe right', () => {
-    const input = moveInputFromStick(stickAt(JOYSTICK_RADIUS, -JOYSTICK_RADIUS))
-    expect(input.forward).toBe(true)
-    expect(input.right).toBe(true)
-    expect(input.backward).toBe(false)
-    expect(input.left).toBe(false)
+  it('ramps from zero at the deadzone edge to one at the rim', () => {
+    const justPast = analogVectorFromStick(stickAt(ANALOG_DEADZONE * JOYSTICK_RADIUS + 2, 0))
+    expect(justPast.x).toBeGreaterThan(0)
+    expect(justPast.x).toBeLessThan(0.1)
+    const rim = analogVectorFromStick(stickAt(JOYSTICK_RADIUS * 2, 0))
+    expect(rim.x).toBeCloseTo(1)
+    expect(rim.y).toBeCloseTo(0)
   })
 
-  it('maps thumb down-left to backward and left', () => {
-    const input = moveInputFromStick(stickAt(-JOYSTICK_RADIUS, JOYSTICK_RADIUS))
-    expect(input.backward).toBe(true)
-    expect(input.left).toBe(true)
+  it('scales magnitude monotonically with deflection', () => {
+    const half = analogVectorFromStick(stickAt(0, -JOYSTICK_RADIUS / 2))
+    const full = analogVectorFromStick(stickAt(0, -JOYSTICK_RADIUS))
+    expect(Math.abs(half.y)).toBeGreaterThan(0.2)
+    expect(Math.abs(half.y)).toBeLessThan(Math.abs(full.y))
+    expect(full.y).toBeCloseTo(-1)
   })
 
-  it('is all-false when the stick is inactive', () => {
-    expect(moveInputFromStick(createJoystick())).toEqual({
-      forward: false,
-      backward: false,
-      left: false,
-      right: false
-    })
+  it('preserves direction without per-axis snapping', () => {
+    const v = analogVectorFromStick(stickAt(30, -40))
+    // 3-4-5 triangle: direction must survive the deadzone remap exactly.
+    expect(v.x / -v.y).toBeCloseTo(30 / 40)
+  })
+
+  it('never exceeds unit magnitude, even on near-rim diagonals', () => {
+    const v = analogVectorFromStick(stickAt(JOYSTICK_RADIUS * 0.95, JOYSTICK_RADIUS * 0.95))
+    expect(Math.hypot(v.x, v.y)).toBeLessThanOrEqual(1.000001)
   })
 })
 
 describe('lookVectorFromStick', () => {
-  it('zeroes each axis independently inside the deadzone', () => {
-    const v = lookVectorFromStick(stickAt(JOYSTICK_RADIUS, 4))
-    expect(v.x).toBeCloseTo(1)
-    expect(v.y).toBe(0)
+  it('squares the response for fine aim near the center', () => {
+    const gentle = lookVectorFromStick(stickAt(JOYSTICK_RADIUS / 2, 0))
+    const linear = analogVectorFromStick(stickAt(JOYSTICK_RADIUS / 2, 0))
+    expect(gentle.x).toBeGreaterThan(0)
+    expect(gentle.x).toBeLessThan(linear.x)
   })
 
-  it('keeps analog deflection outside the deadzone', () => {
-    const v = lookVectorFromStick(stickAt(-JOYSTICK_RADIUS / 2, JOYSTICK_RADIUS / 2))
-    expect(v.x).toBeCloseTo(-0.5)
-    expect(v.y).toBeCloseTo(0.5)
+  it('reaches full rate at the rim and keeps sign', () => {
+    const v = lookVectorFromStick(stickAt(-JOYSTICK_RADIUS * 2, 0))
+    expect(v.x).toBeCloseTo(-1)
+    expect(v.y).toBe(0)
   })
 })
 

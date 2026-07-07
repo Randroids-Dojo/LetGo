@@ -1,30 +1,36 @@
-// Enemy, pickup, and projectile sprites, drawn as front-facing rubber-hose
-// cartoon cels. Every animation frame is drawn twice with different boil
-// seeds; the renderer alternates variants at ~10Hz for the hand-redrawn
-// wobble.
+// Enemy, pickup, and projectile sprites, drawn as front-facing minifigs
+// and molded parts. Every animation frame is drawn twice with a slightly
+// different lean; the renderer alternates variants at ~10Hz so the toys
+// feel stop-motion animated.
 
 import type { EnemyKind, PickupKind } from '@/game/dungeon'
-import { hashString } from '@/game/rng'
+import { hashString, type Rng } from '@/game/rng'
 import {
+  BLACK,
+  BLUE,
+  BROWN,
+  GOLD,
   GRAY_DARK,
   GRAY_LIGHT,
-  GRAY_MID,
-  INK,
-  PAPER,
-  boilEllipse,
-  boilLine,
-  deadEye,
-  glove,
-  inkSplat,
-  inkStar,
-  inkStyle,
-  makeBoil,
+  ORANGE,
+  RED,
+  SEAM,
+  SKIN,
+  WHITE,
+  YELLOW,
+  clawHand,
+  debrisScatter,
   makeCanvas,
-  noodle,
-  pieEye,
-  type Boil,
-  type Ctx
-} from './ink'
+  makeRng,
+  minifigFace,
+  plasticRect,
+  shade,
+  starburst,
+  stud,
+  studSide,
+  type Ctx,
+  type FaceMood
+} from './brick'
 
 export const SPRITE_SIZE = 160
 
@@ -34,26 +40,31 @@ export const ENEMY_FRAMES: EnemyFrame[] = ['walkA', 'walkB', 'windup', 'pain', '
 
 type CharacterSpec = {
   scale: number
-  suit: string
-  ears: 'rat' | 'shrew' | 'cat'
-  hat: 'fedora' | 'bowler' | 'none'
+  torso: string
+  legs: string
+  head: string
+  face: FaceMood
+  hat: 'helmet' | 'knight' | 'wizard' | 'none'
+  hatColor: string
   bulk: number
-  weapon: 'revolver' | 'shotgun' | 'knife' | 'none' | 'cigar'
+  weapon: 'studgun' | 'scatter' | 'staff' | 'sword' | 'none'
+  // The golem is brick-built rather than a standard minifig.
+  golem?: boolean
 }
 
 const SPECS: Record<EnemyKind, CharacterSpec> = {
-  torpedo: { scale: 0.82, suit: GRAY_DARK, ears: 'rat', hat: 'fedora', bulk: 0.85, weapon: 'revolver' },
-  capo: { scale: 0.88, suit: GRAY_MID, ears: 'rat', hat: 'bowler', bulk: 1.1, weapon: 'shotgun' },
-  alleycat: { scale: 0.92, suit: GRAY_DARK, ears: 'shrew', hat: 'none', bulk: 0.75, weapon: 'knife' },
-  bruiser: { scale: 1, suit: GRAY_MID, ears: 'rat', hat: 'none', bulk: 1.45, weapon: 'none' },
-  fatcat: { scale: 1.1, suit: GRAY_DARK, ears: 'cat', hat: 'fedora', bulk: 1.6, weapon: 'cigar' }
+  skeleton: { scale: 0.82, torso: WHITE, legs: WHITE, head: WHITE, face: 'skull', hat: 'none', hatColor: WHITE, bulk: 0.8, weapon: 'studgun' },
+  guard: { scale: 0.88, torso: GRAY_LIGHT, legs: GRAY_DARK, head: SKIN, face: 'angry', hat: 'helmet', hatColor: GRAY_DARK, bulk: 1.05, weapon: 'scatter' },
+  wizard: { scale: 0.92, torso: BLUE, legs: BLUE, head: SKIN, face: 'angry', hat: 'wizard', hatColor: BLUE, bulk: 0.9, weapon: 'staff' },
+  knight: { scale: 1, torso: GRAY_DARK, legs: BLACK, head: SKIN, face: 'angry', hat: 'knight', hatColor: GRAY_LIGHT, bulk: 1.3, weapon: 'sword' },
+  golem: { scale: 1.1, torso: ORANGE, legs: shade(ORANGE, -0.25), head: ORANGE, face: 'angry', hat: 'none', hatColor: ORANGE, bulk: 1.6, weapon: 'none', golem: true }
 }
 
 type Pose = {
   legSwing: number
   armRaise: number
   flinch: boolean
-  collapse: number // 0 standing .. 1 flat
+  collapse: number // 0 standing .. 1 in pieces
   eyesDead: boolean
 }
 
@@ -76,168 +87,250 @@ function poseForFrame(frame: EnemyFrame): Pose {
   }
 }
 
-function drawCharacter(ctx: Ctx, spec: CharacterSpec, pose: Pose, boil: Boil) {
+function drawArm(ctx: Ctx, spec: CharacterSpec, shoulderX: number, shoulderY: number, angle: number, length: number) {
+  ctx.save()
+  ctx.translate(shoulderX, shoulderY)
+  ctx.rotate(angle)
+  plasticRect(ctx, -5 * spec.bulk, 0, 10 * spec.bulk, length, shade(spec.torso, -0.06), { radius: 5, gloss: 0.45, outlineWidth: 2 })
+  clawHand(ctx, 0, length + 6, 7, spec.head, angle > 0 ? -0.4 : 0.4)
+  ctx.restore()
+}
+
+function drawWeapon(ctx: Ctx, spec: CharacterSpec, handX: number, handY: number, raise: number) {
+  ctx.save()
+  ctx.translate(handX, handY)
+  if (spec.weapon === 'studgun') {
+    plasticRect(ctx, -3, -10, 24, 8, GRAY_DARK, { radius: 2, gloss: 0.5 })
+    plasticRect(ctx, -3, -6, 7, 12, GRAY_DARK, { radius: 2, gloss: 0.4 })
+    studSide(ctx, 19, -14, 3.5, 4, GRAY_LIGHT)
+  } else if (spec.weapon === 'scatter') {
+    plasticRect(ctx, -8, -12, 36, 7, GRAY_DARK, { radius: 3, gloss: 0.5 })
+    plasticRect(ctx, -8, -5, 36, 7, GRAY_DARK, { radius: 3, gloss: 0.35 })
+    plasticRect(ctx, -14, -8, 12, 12, BROWN, { radius: 3, gloss: 0.4 })
+  } else if (spec.weapon === 'staff') {
+    plasticRect(ctx, 1, -34 - raise * 6, 5, 46, BROWN, { radius: 2.5, gloss: 0.35 })
+    starburst(ctx, makeRng(7), 3.5, -38 - raise * 6, 5, 9, 4, '#79e6ff', WHITE)
+  } else if (spec.weapon === 'sword') {
+    plasticRect(ctx, 0, -38 - raise * 8, 6, 34, GRAY_LIGHT, { radius: 2, gloss: 0.7 })
+    plasticRect(ctx, -6, -6 - raise * 8, 18, 5, GOLD, { radius: 2, gloss: 0.5 })
+  }
+  ctx.restore()
+}
+
+function drawHat(ctx: Ctx, spec: CharacterSpec, headX: number, headY: number, headR: number) {
+  if (spec.hat === 'helmet') {
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(headX, headY - headR * 0.25, headR * 1.15, Math.PI, Math.PI * 2)
+    ctx.fillStyle = spec.hatColor
+    ctx.fill()
+    ctx.strokeStyle = 'rgba(10,12,16,0.5)'
+    ctx.lineWidth = 2
+    ctx.stroke()
+    plasticRect(ctx, headX - headR * 1.15, headY - headR * 0.35, headR * 2.3, headR * 0.3, spec.hatColor, { radius: 3, gloss: 0.5, outlineWidth: 1.5 })
+    ctx.restore()
+  } else if (spec.hat === 'knight') {
+    // Full helm with a visor slit; covers the face.
+    plasticRect(ctx, headX - headR * 1.05, headY - headR * 1.2, headR * 2.1, headR * 2.2, spec.hatColor, { radius: headR * 0.5, gloss: 0.6 })
+    ctx.fillStyle = BLACK
+    ctx.fillRect(headX - headR * 0.7, headY - headR * 0.35, headR * 1.4, headR * 0.28)
+    plasticRect(ctx, headX - headR * 0.16, headY - headR * 1.7, headR * 0.32, headR * 0.6, RED, { radius: 2, gloss: 0.4, outlineWidth: 1.5 })
+  } else if (spec.hat === 'wizard') {
+    ctx.save()
+    ctx.beginPath()
+    ctx.moveTo(headX - headR * 1.2, headY - headR * 0.55)
+    ctx.lineTo(headX + headR * 1.2, headY - headR * 0.55)
+    ctx.lineTo(headX + headR * 0.1, headY - headR * 2.6)
+    ctx.closePath()
+    ctx.fillStyle = spec.hatColor
+    ctx.fill()
+    ctx.strokeStyle = 'rgba(10,12,16,0.5)'
+    ctx.lineWidth = 2
+    ctx.stroke()
+    stud(ctx, headX - headR * 0.35, headY - headR * 1.3, headR * 0.18, YELLOW)
+    stud(ctx, headX + headR * 0.4, headY - headR * 1.7, headR * 0.14, YELLOW)
+    ctx.restore()
+  }
+}
+
+function drawCharacter(ctx: Ctx, kind: EnemyKind, spec: CharacterSpec, pose: Pose, rng: Rng, lean: number) {
   const S = SPRITE_SIZE
   const cx = S / 2
-  const groundY = S - 10
-  const squash = 1 - pose.collapse * 0.75
+  const groundY = S - 8
   const scale = spec.scale
 
   ctx.save()
   ctx.translate(cx, groundY)
-  ctx.scale(scale, scale * squash)
-  ctx.translate(0, pose.flinch ? 3 : 0)
-  if (pose.flinch) {
-    ctx.rotate(0.06)
-  }
-
-  const bodyW = 26 * spec.bulk
-  const bodyH = 42
-  const bodyY = -bodyH * 0.65
-  const headR = 20
-  const headY = bodyY - bodyH * 0.55 - headR * 0.4
+  ctx.scale(scale, scale)
+  ctx.rotate(lean + (pose.flinch ? 0.06 : 0))
 
   if (pose.collapse >= 1) {
-    // Final frame: an ink puddle with feet sticking up.
-    inkSplat(ctx, boil, 0, -6, 34)
-    inkStyle(ctx, 4)
-    boilEllipse(ctx, boil, -12, -18, 9, 5, INK, 1)
-    boilEllipse(ctx, boil, 14, -16, 9, 5, INK, 1)
+    // Final frame: a scatter of parts with the head resting in the pile.
+    debrisScatter(ctx, rng, 0, -12, 26, [spec.torso, spec.legs, spec.hatColor])
+    ctx.save()
+    ctx.translate(10, -14)
+    ctx.rotate(0.9)
+    plasticRect(ctx, -11, -11, 22, 22, spec.head, { radius: 7, gloss: 0.5 })
+    minifigFace(ctx, 0, 0, 11, spec.face === 'skull' ? 'skull' : 'dead')
+    ctx.restore()
     ctx.restore()
     return
   }
 
-  // Tail first, behind everything.
+  const squash = 1 - pose.collapse * 0.5
+  ctx.scale(1, squash)
+  // Dying figures start to come apart: joints spread with collapse.
+  const sep = pose.collapse * 10
+
+  const legH = 30
+  const legW = 11 * spec.bulk
+  const torsoH = 38
+  const torsoW = 30 * spec.bulk
+  const hipY = -legH
+  const torsoTop = hipY - torsoH - sep * 0.5
+  const headR = 15
+  const headY = torsoTop - headR - 4 - sep
+
+  if (spec.golem) {
+    drawGolem(ctx, spec, pose, rng, sep)
+    ctx.restore()
+    return
+  }
+
+  // Legs: stiff blocks that swing from the hip.
+  const lift = pose.legSwing * 6
+  plasticRect(ctx, -legW - 1.5, hipY - Math.max(0, lift), legW, legH + Math.max(0, lift), spec.legs, { radius: 3, gloss: 0.4 })
+  plasticRect(ctx, 1.5, hipY - Math.max(0, -lift), legW, legH + Math.max(0, -lift), spec.legs, { radius: 3, gloss: 0.4 })
+  // Hip block.
+  plasticRect(ctx, -legW - 1.5, hipY - 7, legW * 2 + 3, 9, shade(spec.legs, -0.15), { radius: 3, gloss: 0.35 })
+
+  // Torso: the classic trapezoid, wider at the hips.
   ctx.save()
-  inkStyle(ctx, 4)
   ctx.beginPath()
-  ctx.moveTo(bodyW * 0.5, bodyY + bodyH * 0.4)
-  ctx.quadraticCurveTo(bodyW * 1.6 + boil(3), bodyY + 10 + boil(3), bodyW * 1.3 + boil(3), bodyY - 24 + boil(3))
+  ctx.moveTo(-torsoW * 0.42, torsoTop)
+  ctx.lineTo(torsoW * 0.42, torsoTop)
+  ctx.lineTo(torsoW * 0.55, torsoTop + torsoH)
+  ctx.lineTo(-torsoW * 0.55, torsoTop + torsoH)
+  ctx.closePath()
+  const grad = ctx.createLinearGradient(0, torsoTop, 0, torsoTop + torsoH)
+  grad.addColorStop(0, shade(spec.torso, 0.18))
+  grad.addColorStop(1, shade(spec.torso, -0.15))
+  ctx.fillStyle = grad
+  ctx.fill()
+  ctx.strokeStyle = SEAM
+  ctx.lineWidth = 2.5
   ctx.stroke()
   ctx.restore()
 
-  // Legs: noodles with big shoes.
-  const legLift = pose.legSwing * 7
-  inkStyle(ctx, 6)
-  noodle(ctx, boil, -bodyW * 0.35, bodyY + bodyH * 0.42, -bodyW * 0.5, -14, -bodyW * 0.55 - legLift * 0.4, -4 - Math.max(0, legLift), 6)
-  noodle(ctx, boil, bodyW * 0.35, bodyY + bodyH * 0.42, bodyW * 0.5, -14, bodyW * 0.55 + legLift * 0.4, -4 - Math.max(0, -legLift), 6)
-  inkStyle(ctx, 3.5)
-  boilEllipse(ctx, boil, -bodyW * 0.6 - legLift * 0.4, -3 - Math.max(0, legLift), 12, 6, INK, 1)
-  boilEllipse(ctx, boil, bodyW * 0.6 + legLift * 0.4, -3 - Math.max(0, -legLift), 12, 6, INK, 1)
-
-  // Body: pear-shaped suit.
-  inkStyle(ctx, 4)
-  boilEllipse(ctx, boil, 0, bodyY, bodyW, bodyH * 0.55, spec.suit, 1.4)
-  // Shirt front + buttons.
-  boilEllipse(ctx, boil, 0, bodyY + 4, bodyW * 0.45, bodyH * 0.4, PAPER, 1)
-  ctx.fillStyle = INK
-  for (let i = 0; i < 2; i++) {
-    ctx.beginPath()
-    ctx.arc(boil(1), bodyY - 2 + i * 12, 2.4, 0, Math.PI * 2)
-    ctx.fill()
-  }
-
-  // Arms: one relaxed, one raised by armRaise (weapon arm).
-  const raise = pose.armRaise
-  noodle(ctx, boil, -bodyW * 0.8, bodyY - bodyH * 0.2, -bodyW * 1.5, bodyY + 10, -bodyW * 1.3, bodyY + 18 - raise * 6, 6)
-  glove(ctx, boil, -bodyW * 1.3, bodyY + 18 - raise * 6, 7)
-  const handX = bodyW * 1.35
-  const handY = bodyY - raise * 34 + 14
-  noodle(ctx, boil, bodyW * 0.8, bodyY - bodyH * 0.2, bodyW * 1.5, bodyY + 16 - raise * 40, handX, handY, 6)
-  glove(ctx, boil, handX, handY, 7)
-
-  // Weapon in the raised hand.
-  ctx.save()
-  inkStyle(ctx, 3.5)
-  if (spec.weapon === 'revolver') {
-    ctx.fillStyle = INK
-    ctx.fillRect(handX - 2, handY - 12, 18, 7)
-    ctx.fillRect(handX - 2, handY - 8, 6, 10)
-  } else if (spec.weapon === 'shotgun') {
-    ctx.fillStyle = INK
-    ctx.fillRect(handX - 6, handY - 13, 30, 6)
-    ctx.fillStyle = GRAY_DARK
-    ctx.fillRect(handX - 12, handY - 9, 12, 6)
-  } else if (spec.weapon === 'knife') {
-    ctx.fillStyle = PAPER
-    ctx.beginPath()
-    ctx.moveTo(handX, handY - 8)
-    ctx.lineTo(handX + 6, handY - 30)
-    ctx.lineTo(handX + 12, handY - 8)
-    ctx.closePath()
-    ctx.fill()
-    ctx.stroke()
-  } else if (spec.weapon === 'cigar') {
-    ctx.fillStyle = GRAY_DARK
-    ctx.fillRect(handX - 2, handY - 10, 14, 5)
-    ctx.fillStyle = PAPER
-    ctx.beginPath()
-    ctx.arc(handX + 14, handY - 8, 3, 0, Math.PI * 2)
-    ctx.fill()
-  }
-  ctx.restore()
-
-  // Head.
-  inkStyle(ctx, 4)
-  boilEllipse(ctx, boil, 0, headY, headR, headR * 0.95, PAPER, 1.4)
-  // Ears.
-  if (spec.ears === 'rat') {
-    boilEllipse(ctx, boil, -headR * 0.8, headY - headR * 0.8, 9, 9, PAPER, 1)
-    boilEllipse(ctx, boil, headR * 0.8, headY - headR * 0.8, 9, 9, PAPER, 1)
-  } else if (spec.ears === 'cat') {
-    ctx.save()
-    ctx.fillStyle = PAPER
-    inkStyle(ctx, 3.5)
-    for (const side of [-1, 1]) {
+  // Torso print.
+  if (kind === 'skeleton') {
+    ctx.strokeStyle = shade(WHITE, -0.4)
+    ctx.lineWidth = 3
+    for (let i = 0; i < 3; i++) {
       ctx.beginPath()
-      ctx.moveTo(side * headR * 0.4, headY - headR * 0.7)
-      ctx.lineTo(side * headR * 1.1 + boil(1), headY - headR * 1.6 + boil(1))
-      ctx.lineTo(side * headR * 1.05, headY - headR * 0.2)
-      ctx.closePath()
-      ctx.fill()
+      ctx.moveTo(-torsoW * 0.3, torsoTop + 9 + i * 9)
+      ctx.lineTo(torsoW * 0.3, torsoTop + 9 + i * 9)
       ctx.stroke()
     }
-    ctx.restore()
-  } else {
-    boilEllipse(ctx, boil, -headR * 0.9, headY - headR * 0.5, 6, 6, PAPER, 0.8)
-    boilEllipse(ctx, boil, headR * 0.9, headY - headR * 0.5, 6, 6, PAPER, 0.8)
+    ctx.beginPath()
+    ctx.moveTo(0, torsoTop + 4)
+    ctx.lineTo(0, torsoTop + torsoH - 6)
+    ctx.stroke()
+  } else if (kind === 'guard') {
+    plasticRect(ctx, -torsoW * 0.32, torsoTop + 6, torsoW * 0.64, torsoH * 0.6, shade(GRAY_LIGHT, -0.2), { radius: 4, gloss: 0.6, outlineWidth: 1.5 })
+    stud(ctx, 0, torsoTop + torsoH * 0.35, 3.5, GRAY_LIGHT)
+  } else if (kind === 'wizard') {
+    // Robe stars.
+    for (const [sx, sy] of [
+      [-torsoW * 0.25, torsoTop + 12],
+      [torsoW * 0.2, torsoTop + 22],
+      [-torsoW * 0.05, torsoTop + 30]
+    ]) {
+      starburst(ctx, rng, sx, sy, 4, 4, 1.8, YELLOW, null)
+    }
+  } else if (kind === 'knight') {
+    plasticRect(ctx, -torsoW * 0.36, torsoTop + 5, torsoW * 0.72, torsoH * 0.7, GRAY_LIGHT, { radius: 5, gloss: 0.7, outlineWidth: 2 })
+    ctx.fillStyle = RED
+    ctx.beginPath()
+    ctx.moveTo(0, torsoTop + 10)
+    ctx.lineTo(6, torsoTop + 22)
+    ctx.lineTo(0, torsoTop + 30)
+    ctx.lineTo(-6, torsoTop + 22)
+    ctx.closePath()
+    ctx.fill()
   }
-  // Snout.
-  const snout = spec.ears === 'shrew' ? 1.3 : 1
-  boilEllipse(ctx, boil, 0, headY + headR * 0.45, headR * 0.55 * snout, headR * 0.35, PAPER, 1)
-  ctx.fillStyle = INK
-  ctx.beginPath()
-  ctx.arc(0, headY + headR * 0.35, 3.4 * snout, 0, Math.PI * 2)
-  ctx.fill()
 
-  // Eyes.
-  if (pose.eyesDead) {
-    deadEye(ctx, boil, -headR * 0.42, headY - headR * 0.15, 5)
-    deadEye(ctx, boil, headR * 0.42, headY - headR * 0.15, 5)
-  } else {
-    pieEye(ctx, boil, -headR * 0.42, headY - headR * 0.15, 4.6, pose.flinch ? 0 : 0.6)
-    pieEye(ctx, boil, headR * 0.42, headY - headR * 0.15, 4.6, pose.flinch ? 0 : 0.6)
-  }
-  // Angry brows.
-  inkStyle(ctx, 3.5)
-  boilLine(ctx, boil, -headR * 0.75, headY - headR * 0.5, -headR * 0.15, headY - headR * 0.32, 0.8)
-  boilLine(ctx, boil, headR * 0.15, headY - headR * 0.32, headR * 0.75, headY - headR * 0.5, 0.8)
+  // Arms. The weapon arm rises with armRaise.
+  const raise = pose.armRaise
+  const shoulderY = torsoTop + 5
+  drawArm(ctx, spec, -torsoW * 0.48, shoulderY, 0.5 - raise * 0.1, torsoH * 0.75)
+  const weaponAngle = -0.5 - raise * 1.1
+  drawArm(ctx, spec, torsoW * 0.48, shoulderY, weaponAngle, torsoH * 0.75)
+  const armLen = torsoH * 0.75 + 6
+  const handX = torsoW * 0.48 - Math.sin(weaponAngle) * armLen
+  const handY = shoulderY + Math.cos(weaponAngle) * armLen
+  drawWeapon(ctx, spec, handX, handY, raise)
 
-  // Hat.
-  if (spec.hat === 'fedora') {
-    ctx.fillStyle = INK
-    boilEllipse(ctx, boil, 0, headY - headR * 0.75, headR * 1.25, headR * 0.28, INK, 1)
-    ctx.fillRect(-headR * 0.7, headY - headR * 1.7, headR * 1.4, headR)
-    inkStyle(ctx, 3)
-    ctx.strokeRect(-headR * 0.7, headY - headR * 1.7, headR * 1.4, headR)
-    ctx.fillStyle = GRAY_MID
-    ctx.fillRect(-headR * 0.7, headY - headR * 1, headR * 1.4, headR * 0.22)
-  } else if (spec.hat === 'bowler') {
-    boilEllipse(ctx, boil, 0, headY - headR * 0.72, headR * 1.15, headR * 0.24, INK, 1)
-    boilEllipse(ctx, boil, 0, headY - headR * 1.05, headR * 0.75, headR * 0.55, INK, 1)
+  // Head.
+  plasticRect(ctx, -headR, headY - headR, headR * 2, headR * 2, spec.head, { radius: headR * 0.55, gloss: 0.6 })
+  if (spec.hat === 'none') {
+    studSide(ctx, 0, headY - headR - 3.5, headR * 0.4, 3.5, spec.head)
   }
+  if (spec.hat !== 'knight') {
+    minifigFace(ctx, 0, headY, headR, pose.eyesDead ? (spec.face === 'skull' ? 'skull' : 'dead') : spec.face)
+  }
+  drawHat(ctx, spec, 0, headY, headR)
 
   ctx.restore()
+}
+
+// The golem: a brick-built brute instead of a standard minifig.
+function drawGolem(ctx: Ctx, spec: CharacterSpec, pose: Pose, rng: Rng, sep: number) {
+  const bodyW = 56
+  const lift = pose.legSwing * 5
+  // Stumpy leg bricks.
+  plasticRect(ctx, -bodyW * 0.45, -26 - Math.max(0, lift), 22, 26 + Math.max(0, lift), spec.legs, { radius: 3, gloss: 0.4 })
+  plasticRect(ctx, bodyW * 0.45 - 22, -26 - Math.max(0, -lift), 22, 26 + Math.max(0, -lift), spec.legs, { radius: 3, gloss: 0.4 })
+  // Stacked torso courses with visible studs.
+  const courses = [
+    { y: -44 - sep * 0.4, w: bodyW * 1.05, tone: -0.12 },
+    { y: -62 - sep * 0.7, w: bodyW * 1.15, tone: 0.05 },
+    { y: -80 - sep, w: bodyW * 0.95, tone: -0.04 }
+  ]
+  for (const course of courses) {
+    plasticRect(ctx, -course.w / 2, course.y, course.w, 20, shade(spec.torso, course.tone + (rng() - 0.5) * 0.06), { radius: 3, gloss: 0.45, outlineWidth: 2.5 })
+    for (let i = 0; i < 3; i++) {
+      studSide(ctx, -course.w / 3 + (i * course.w) / 3, course.y - 3, 5, 3, shade(spec.torso, course.tone))
+    }
+  }
+  // Massive arm bricks; the raised one telegraphs the throw.
+  const raise = pose.armRaise
+  ctx.save()
+  ctx.translate(-bodyW * 0.72, -74 - sep)
+  ctx.rotate(0.35 - raise * 0.2)
+  plasticRect(ctx, -9, 0, 18, 42, shade(spec.torso, -0.18), { radius: 4, gloss: 0.4 })
+  ctx.restore()
+  ctx.save()
+  ctx.translate(bodyW * 0.72, -74 - sep)
+  ctx.rotate(-0.35 + raise * 1.15)
+  plasticRect(ctx, -9, 0, 18, 42, shade(spec.torso, -0.18), { radius: 4, gloss: 0.4 })
+  if (raise > 0.5) {
+    starburst(ctx, rng, 0, 50, 6, 12, 6, ORANGE, YELLOW)
+  }
+  ctx.restore()
+  // Head brick with glowing eyes.
+  const headY = -96 - sep * 1.4
+  plasticRect(ctx, -16, headY - 14, 32, 22, shade(spec.torso, 0.08), { radius: 4, gloss: 0.5 })
+  studSide(ctx, -6, headY - 17.5, 4, 3.5, spec.torso)
+  studSide(ctx, 6, headY - 17.5, 4, 3.5, spec.torso)
+  ctx.fillStyle = pose.eyesDead ? BLACK : YELLOW
+  for (const side of [-1, 1]) {
+    ctx.beginPath()
+    ctx.arc(side * 7, headY - 4, 3.4, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.fillStyle = BLACK
+  ctx.fillRect(-8, headY + 3, 16, 3)
 }
 
 export type SpriteSheet = Record<EnemyFrame, HTMLCanvasElement[]>
@@ -248,8 +341,8 @@ export function drawEnemySprites(kind: EnemyKind): SpriteSheet {
   for (const frame of ENEMY_FRAMES) {
     sheet[frame] = [0, 1].map((variant) => {
       const { canvas, ctx } = makeCanvas(SPRITE_SIZE, SPRITE_SIZE)
-      const boil = makeBoil(hashString(`${kind}-${frame}-${variant}`))
-      drawCharacter(ctx, spec, poseForFrame(frame), boil)
+      const rng = makeRng(hashString(`${kind}-${frame}-${variant}`))
+      drawCharacter(ctx, kind, spec, poseForFrame(frame), rng, variant === 0 ? -0.015 : 0.015)
       return canvas
     })
   }
@@ -260,228 +353,245 @@ export function drawEnemySprites(kind: EnemyKind): SpriteSheet {
 
 const PICKUP_SIZE = 96
 
-function pickupCanvas(draw: (ctx: Ctx, boil: Boil) => void, seed: string): HTMLCanvasElement[] {
+function pickupCanvas(draw: (ctx: Ctx, rng: Rng) => void, seed: string): HTMLCanvasElement[] {
   return [0, 1].map((variant) => {
     const { canvas, ctx } = makeCanvas(PICKUP_SIZE, PICKUP_SIZE)
-    const boil = makeBoil(hashString(`${seed}-${variant}`))
+    const rng = makeRng(hashString(`${seed}-${variant}`))
     ctx.save()
     ctx.translate(PICKUP_SIZE / 2, PICKUP_SIZE / 2)
-    draw(ctx, boil)
+    ctx.rotate(variant === 0 ? -0.03 : 0.03)
+    draw(ctx, rng)
     ctx.restore()
     return canvas
   })
 }
 
-function drawCoin(ctx: Ctx, boil: Boil) {
-  inkStyle(ctx, 4)
-  boilEllipse(ctx, boil, 0, 6, 22, 22, GRAY_LIGHT, 1.2)
-  ctx.fillStyle = INK
-  ctx.font = 'bold 26px Georgia, serif'
-  ctx.textAlign = 'center'
-  ctx.fillText('$', 0, 16)
-}
-
-function drawCoinPile(ctx: Ctx, boil: Boil) {
-  inkStyle(ctx, 3.5)
-  boilEllipse(ctx, boil, -14, 18, 16, 15, GRAY_LIGHT, 1)
-  boilEllipse(ctx, boil, 16, 16, 16, 15, GRAY_LIGHT, 1)
-  boilEllipse(ctx, boil, 0, 0, 18, 17, GRAY_LIGHT, 1)
-  ctx.fillStyle = INK
-  ctx.font = 'bold 20px Georgia, serif'
-  ctx.textAlign = 'center'
-  ctx.fillText('$', 0, 8)
-}
-
-function drawCheese(ctx: Ctx, boil: Boil, big: boolean) {
-  inkStyle(ctx, 4)
-  ctx.fillStyle = GRAY_LIGHT
-  if (big) {
-    // Cheese wheel with one wedge cut.
-    boilEllipse(ctx, boil, 0, 8, 28, 18, GRAY_LIGHT, 1.4)
-    boilLine(ctx, boil, 0, 8, 24, -4, 1)
-    boilLine(ctx, boil, 0, 8, 8, -10, 1)
-  } else {
-    ctx.beginPath()
-    ctx.moveTo(-24 + boil(), 22 + boil())
-    ctx.lineTo(26 + boil(), 22 + boil())
-    ctx.lineTo(20 + boil(), -16 + boil())
-    ctx.closePath()
-    ctx.fill()
-    ctx.stroke()
-  }
-  // Holes.
-  ctx.fillStyle = GRAY_MID
-  for (const [hx, hy, r] of [
-    [6, 10, 4],
-    [14, 2, 3],
-    [-4, 16, 3]
-  ]) {
-    ctx.beginPath()
-    ctx.arc(hx, hy, r, 0, Math.PI * 2)
-    ctx.fill()
-  }
-}
-
-function drawVest(ctx: Ctx, boil: Boil, heavy: boolean) {
-  inkStyle(ctx, 4)
-  ctx.fillStyle = heavy ? GRAY_DARK : GRAY_MID
+// A loose stud seen at three-quarter view: short gold cylinder.
+function drawStudPiece(ctx: Ctx, cx: number, cy: number, r: number) {
+  ctx.save()
+  ctx.fillStyle = shade(GOLD, -0.15)
   ctx.beginPath()
-  ctx.moveTo(-20 + boil(), -20 + boil())
-  ctx.lineTo(20 + boil(), -20 + boil())
-  ctx.lineTo(24 + boil(), 24 + boil())
-  ctx.lineTo(-24 + boil(), 24 + boil())
-  ctx.closePath()
+  ctx.ellipse(cx, cy + r * 0.45, r, r * 0.5, 0, 0, Math.PI)
+  ctx.fill()
+  ctx.fillRect(cx - r, cy, r * 2, r * 0.45)
+  ctx.strokeStyle = 'rgba(10,12,16,0.5)'
+  ctx.lineWidth = 2
+  ctx.strokeRect(cx - r, cy, r * 2, r * 0.45)
+  ctx.beginPath()
+  ctx.ellipse(cx, cy, r, r * 0.5, 0, 0, Math.PI * 2)
+  const g = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.2, r * 0.1, cx, cy, r)
+  g.addColorStop(0, shade(GOLD, 0.45))
+  g.addColorStop(1, GOLD)
+  ctx.fillStyle = g
   ctx.fill()
   ctx.stroke()
-  boilLine(ctx, boil, -10, -20, -10, 24, 1)
-  boilLine(ctx, boil, 10, -20, 10, 24, 1)
-  if (heavy) {
-    ctx.fillStyle = GRAY_LIGHT
+  ctx.restore()
+}
+
+function drawHeart(ctx: Ctx, big: boolean) {
+  if (big) {
+    // Medkit brick: white 2x2 with a red cross print.
+    plasticRect(ctx, -26, -14, 52, 36, WHITE, { radius: 4, gloss: 0.55 })
+    studSide(ctx, -13, -18, 6, 4, WHITE)
+    studSide(ctx, 13, -18, 6, 4, WHITE)
+    ctx.fillStyle = RED
+    ctx.fillRect(-5, -8, 10, 24)
+    ctx.fillRect(-12, -1, 24, 10)
+  } else {
+    ctx.save()
     ctx.beginPath()
-    ctx.arc(0, 2, 8, 0, Math.PI * 2)
+    ctx.moveTo(0, 18)
+    ctx.bezierCurveTo(-26, -2, -16, -22, 0, -10)
+    ctx.bezierCurveTo(16, -22, 26, -2, 0, 18)
+    const g = ctx.createLinearGradient(0, -20, 0, 18)
+    g.addColorStop(0, shade(RED, 0.25))
+    g.addColorStop(1, shade(RED, -0.12))
+    ctx.fillStyle = g
     ctx.fill()
+    ctx.strokeStyle = 'rgba(10,12,16,0.5)'
+    ctx.lineWidth = 2.5
     ctx.stroke()
+    ctx.restore()
   }
 }
 
-function drawAmmoBox(ctx: Ctx, boil: Boil, label: string) {
-  inkStyle(ctx, 4)
-  ctx.fillStyle = GRAY_MID
-  ctx.fillRect(-24, -14, 48, 34)
-  ctx.strokeRect(-24, -14, 48, 34)
-  ctx.fillStyle = PAPER
-  ctx.fillRect(-18, -8, 36, 16)
-  ctx.fillStyle = INK
-  ctx.font = 'bold 12px Georgia, serif'
-  ctx.textAlign = 'center'
-  ctx.fillText(label, 0, 4)
-  boilLine(ctx, boil, -24, 20, 24, 20, 1)
+function drawVestPickup(ctx: Ctx, heavy: boolean) {
+  const color = heavy ? GRAY_DARK : GRAY_LIGHT
+  ctx.save()
+  ctx.beginPath()
+  ctx.moveTo(-18, -20)
+  ctx.lineTo(18, -20)
+  ctx.lineTo(24, 22)
+  ctx.lineTo(-24, 22)
+  ctx.closePath()
+  const g = ctx.createLinearGradient(0, -20, 0, 22)
+  g.addColorStop(0, shade(color, 0.2))
+  g.addColorStop(1, shade(color, -0.15))
+  ctx.fillStyle = g
+  ctx.fill()
+  ctx.strokeStyle = SEAM
+  ctx.lineWidth = 3
+  ctx.stroke()
+  // Shoulder cutouts.
+  ctx.fillStyle = 'rgba(10,12,16,0.35)'
+  ctx.beginPath()
+  ctx.ellipse(-12, -20, 7, 5, 0, 0, Math.PI)
+  ctx.ellipse(12, -20, 7, 5, 0, 0, Math.PI)
+  ctx.fill()
+  if (heavy) {
+    ctx.strokeStyle = GOLD
+    ctx.lineWidth = 3
+    ctx.strokeRect(-14, -10, 28, 24)
+    stud(ctx, 0, 2, 6, GOLD)
+  } else {
+    stud(ctx, 0, 2, 6, color)
+  }
+  ctx.restore()
 }
 
-function drawKey(ctx: Ctx, boil: Boil) {
-  inkStyle(ctx, 5)
-  boilEllipse(ctx, boil, -10, -8, 12, 12, PAPER, 1)
-  boilLine(ctx, boil, 0, 2, 20, 22, 1)
-  boilLine(ctx, boil, 12, 14, 20, 8, 1)
-  boilLine(ctx, boil, 16, 18, 24, 12, 1)
+function drawAmmoBox(ctx: Ctx, label: string, color: string) {
+  plasticRect(ctx, -26, -16, 52, 38, color, { radius: 4, gloss: 0.5 })
+  studSide(ctx, -13, -20, 6, 4, color)
+  studSide(ctx, 13, -20, 6, 4, color)
+  plasticRect(ctx, -20, -6, 40, 18, WHITE, { radius: 3, gloss: 0.25, outlineWidth: 1.5 })
+  ctx.fillStyle = BLACK
+  ctx.font = 'bold 11px Verdana, Arial, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText(label, 0, 7)
+}
+
+function drawKey(ctx: Ctx) {
+  ctx.save()
+  ctx.strokeStyle = shade(GOLD, -0.3)
+  ctx.lineWidth = 6
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.arc(-10, -8, 11, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.strokeStyle = GOLD
+  ctx.lineWidth = 5
+  ctx.beginPath()
+  ctx.arc(-10, -8, 11, 0, Math.PI * 2)
+  ctx.moveTo(-2, 0)
+  ctx.lineTo(18, 20)
+  ctx.moveTo(10, 12)
+  ctx.lineTo(17, 5)
+  ctx.moveTo(14, 16)
+  ctx.lineTo(21, 9)
+  ctx.stroke()
+  ctx.restore()
 }
 
 export function drawPickupSprites(): Record<PickupKind, HTMLCanvasElement[]> {
   return {
-    coinSmall: pickupCanvas(drawCoin, 'coin'),
-    coinPile: pickupCanvas(drawCoinPile, 'coinpile'),
-    cheeseBit: pickupCanvas((ctx, boil) => drawCheese(ctx, boil, false), 'cheesebit'),
-    cheeseWheel: pickupCanvas((ctx, boil) => drawCheese(ctx, boil, true), 'cheesewheel'),
-    vest: pickupCanvas((ctx, boil) => drawVest(ctx, boil, false), 'vest'),
-    trenchArmor: pickupCanvas((ctx, boil) => drawVest(ctx, boil, true), 'trench'),
-    bullets: pickupCanvas((ctx, boil) => drawAmmoBox(ctx, boil, 'BULLETS'), 'bullets'),
-    shells: pickupCanvas((ctx, boil) => drawAmmoBox(ctx, boil, 'SHELLS'), 'shells'),
+    stud: pickupCanvas((ctx) => drawStudPiece(ctx, 0, 2, 16), 'stud'),
+    studPile: pickupCanvas((ctx) => {
+      drawStudPiece(ctx, -16, 10, 13)
+      drawStudPiece(ctx, 16, 10, 13)
+      drawStudPiece(ctx, 0, -8, 14)
+    }, 'studpile'),
+    heartSmall: pickupCanvas((ctx) => drawHeart(ctx, false), 'heartsmall'),
+    heartBig: pickupCanvas((ctx) => drawHeart(ctx, true), 'heartbig'),
+    vest: pickupCanvas((ctx) => drawVestPickup(ctx, false), 'vest'),
+    heavyArmor: pickupCanvas((ctx) => drawVestPickup(ctx, true), 'heavyarmor'),
+    bullets: pickupCanvas((ctx) => drawAmmoBox(ctx, 'STUDS', GRAY_LIGHT), 'bullets'),
+    shells: pickupCanvas((ctx) => drawAmmoBox(ctx, 'SHELLS', RED), 'shells'),
     tnt: pickupCanvas(drawTntBundle, 'tntammo'),
-    cells: pickupCanvas((ctx, boil) => drawAmmoBox(ctx, boil, 'CELLS'), 'cells'),
+    cells: pickupCanvas((ctx) => drawAmmoBox(ctx, 'CELLS', BLUE), 'cells'),
     vaultKey: pickupCanvas(drawKey, 'key')
   }
 }
 
-function drawTntBundle(ctx: Ctx, boil: Boil) {
-  inkStyle(ctx, 3.5)
-  ctx.fillStyle = GRAY_DARK
-  for (const x of [-12, 0, 12]) {
-    ctx.fillRect(x - 6, -18, 12, 40)
-    ctx.strokeRect(x - 6, -18, 12, 40)
+function drawTntBundle(ctx: Ctx) {
+  for (const x of [-13, 0, 13]) {
+    plasticRect(ctx, x - 6, -18, 12, 40, RED, { radius: 5, gloss: 0.5, outlineWidth: 2 })
   }
-  ctx.fillStyle = PAPER
-  ctx.fillRect(-20, -4, 40, 12)
-  ctx.strokeRect(-20, -4, 40, 12)
-  ctx.fillStyle = INK
-  ctx.font = 'bold 10px Georgia, serif'
+  plasticRect(ctx, -21, -5, 42, 12, WHITE, { radius: 2, gloss: 0.3, outlineWidth: 1.5 })
+  ctx.fillStyle = BLACK
+  ctx.font = 'bold 10px Verdana, Arial, sans-serif'
   ctx.textAlign = 'center'
-  ctx.fillText('TNT', 0, 5)
-  boilLine(ctx, boil, 0, -18, 8, -30, 0.8)
+  ctx.fillText('TNT', 0, 4)
+  ctx.strokeStyle = BLACK
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(0, -18)
+  ctx.quadraticCurveTo(6, -26, 10, -28)
+  ctx.stroke()
 }
 
-// Explosive crate: waist-high box marked TNT.
+// Explosive crate: waist-high brown crate marked TNT.
 export function drawCrateSprites(): HTMLCanvasElement[] {
-  return pickupCanvas((ctx, boil) => {
-    inkStyle(ctx, 4)
-    ctx.fillStyle = GRAY_MID
-    ctx.fillRect(-30, -26, 60, 60)
-    ctx.strokeRect(-30, -26, 60, 60)
-    boilLine(ctx, boil, -30, -26, 30, 34, 1.4)
-    boilLine(ctx, boil, 30, -26, -30, 34, 1.4)
-    ctx.fillStyle = PAPER
-    ctx.fillRect(-20, -6, 40, 18)
-    ctx.strokeRect(-20, -6, 40, 18)
-    ctx.fillStyle = INK
-    ctx.font = 'bold 13px Georgia, serif'
+  return pickupCanvas((ctx) => {
+    plasticRect(ctx, -30, -26, 60, 60, BROWN, { radius: 4, gloss: 0.4 })
+    studSide(ctx, -15, -30, 6, 4, BROWN)
+    studSide(ctx, 15, -30, 6, 4, BROWN)
+    ctx.strokeStyle = 'rgba(10,12,16,0.4)'
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.moveTo(-30, -26)
+    ctx.lineTo(30, 34)
+    ctx.moveTo(30, -26)
+    ctx.lineTo(-30, 34)
+    ctx.stroke()
+    plasticRect(ctx, -20, -6, 40, 20, WHITE, { radius: 3, gloss: 0.25, outlineWidth: 1.5 })
+    ctx.fillStyle = BLACK
+    ctx.font = 'bold 13px Verdana, Arial, sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText('TNT', 0, 7)
+    ctx.fillText('TNT', 0, 8)
   }, 'crate')
 }
 
 // --- Projectiles and effects ---
 
-export type ProjectileArt = 'knife' | 'ember' | 'ray' | 'tnt' | 'bigcheese'
+export type ProjectileArt = 'bolt' | 'fireball' | 'ray' | 'tnt' | 'megabrick'
 
 export function drawProjectileSprites(): Record<ProjectileArt, HTMLCanvasElement[]> {
-  const make = (seed: string, draw: (ctx: Ctx, boil: Boil) => void) =>
+  const make = (seed: string, draw: (ctx: Ctx, rng: Rng) => void) =>
     [0, 1].map((variant) => {
       const { canvas, ctx } = makeCanvas(64, 64)
-      const boil = makeBoil(hashString(`${seed}-${variant}`))
+      const rng = makeRng(hashString(`${seed}-${variant}`))
       ctx.save()
       ctx.translate(32, 32)
-      draw(ctx, boil)
+      draw(ctx, rng)
       ctx.restore()
       return canvas
     })
   return {
-    knife: make('proj-knife', (ctx, boil) => {
-      inkStyle(ctx, 3)
-      ctx.fillStyle = PAPER
+    bolt: make('proj-bolt', (ctx, rng) => {
+      starburst(ctx, rng, 0, 0, 5, 16, 7, '#79e6ff', WHITE)
+    }),
+    fireball: make('proj-fireball', (ctx, rng) => {
+      starburst(ctx, rng, 0, 0, 7, 20, 10, ORANGE, YELLOW)
+    }),
+    ray: make('proj-ray', (ctx) => {
+      ctx.save()
+      ctx.shadowColor = '#7ef05a'
+      ctx.shadowBlur = 10
       ctx.beginPath()
-      ctx.moveTo(-4 + boil(), 14 + boil())
-      ctx.lineTo(0 + boil(), -18 + boil())
-      ctx.lineTo(4 + boil(), 14 + boil())
-      ctx.closePath()
+      ctx.ellipse(0, 0, 15, 7, 0, 0, Math.PI * 2)
+      ctx.fillStyle = '#7ef05a'
       ctx.fill()
-      ctx.stroke()
-      ctx.fillStyle = INK
-      ctx.fillRect(-6, 12, 12, 6)
-    }),
-    ember: make('proj-ember', (ctx, boil) => {
-      inkStar(ctx, boil, 0, 0, 7, 18, 9, GRAY_LIGHT)
-      ctx.fillStyle = INK
+      ctx.restore()
       ctx.beginPath()
-      ctx.arc(0, 0, 6, 0, Math.PI * 2)
+      ctx.ellipse(0, 0, 7, 3.2, 0, 0, Math.PI * 2)
+      ctx.fillStyle = WHITE
       ctx.fill()
     }),
-    ray: make('proj-ray', (ctx, boil) => {
-      inkStyle(ctx, 3)
-      boilEllipse(ctx, boil, 0, 0, 14, 6, PAPER, 1)
-      boilEllipse(ctx, boil, 0, 0, 7, 3, INK, 0.6)
-    }),
-    tnt: make('proj-tnt', (ctx, boil) => {
-      inkStyle(ctx, 3)
-      ctx.fillStyle = GRAY_DARK
+    tnt: make('proj-tnt', (ctx, rng) => {
       ctx.save()
       ctx.rotate(0.4)
-      ctx.fillRect(-6, -16, 12, 32)
-      ctx.strokeRect(-6, -16, 12, 32)
+      plasticRect(ctx, -6, -16, 12, 32, RED, { radius: 5, gloss: 0.5, outlineWidth: 2 })
       ctx.restore()
-      inkStar(ctx, boil, 10, -18, 5, 8, 4, PAPER)
+      starburst(ctx, rng, 10, -18, 5, 8, 4, YELLOW, WHITE)
     }),
-    bigcheese: make('proj-bigcheese', (ctx, boil) => {
-      inkStyle(ctx, 4)
-      boilEllipse(ctx, boil, 0, 0, 24, 20, GRAY_LIGHT, 1.6)
-      ctx.fillStyle = GRAY_MID
-      for (const [hx, hy, r] of [
-        [-8, -4, 5],
-        [8, 6, 4],
-        [4, -8, 3]
-      ]) {
-        ctx.beginPath()
-        ctx.arc(hx, hy, r, 0, Math.PI * 2)
-        ctx.fill()
+    megabrick: make('proj-megabrick', (ctx) => {
+      ctx.save()
+      ctx.rotate(-0.35)
+      plasticRect(ctx, -24, -10, 48, 22, RED, { radius: 3, gloss: 0.55, outlineWidth: 2.5 })
+      for (let i = 0; i < 4; i++) {
+        studSide(ctx, -18 + i * 12, -13.5, 4.5, 3.5, RED)
       }
+      ctx.restore()
     })
   }
 }
@@ -489,8 +599,8 @@ export function drawProjectileSprites(): Record<ProjectileArt, HTMLCanvasElement
 export function drawImpactStar(): HTMLCanvasElement[] {
   return [0, 1].map((variant) => {
     const { canvas, ctx } = makeCanvas(96, 96)
-    const boil = makeBoil(hashString(`impact-${variant}`))
-    inkStar(ctx, boil, 48, 48, 8, 40, 18, PAPER)
+    const rng = makeRng(hashString(`impact-${variant}`))
+    starburst(ctx, rng, 48, 48, 8, 38, 17, YELLOW, WHITE)
     return canvas
   })
 }
@@ -498,24 +608,25 @@ export function drawImpactStar(): HTMLCanvasElement[] {
 export function drawExplosion(): HTMLCanvasElement[] {
   return [0, 1, 2].map((stage) => {
     const { canvas, ctx } = makeCanvas(160, 160)
-    const boil = makeBoil(hashString(`boom-${stage}`))
+    const rng = makeRng(hashString(`boom-${stage}`))
     const r = 30 + stage * 24
-    inkStar(ctx, boil, 80, 80, 9, r, r * 0.55, stage === 2 ? GRAY_MID : PAPER)
-    ctx.fillStyle = INK
-    ctx.font = 'bold 26px Georgia, serif'
-    ctx.textAlign = 'center'
+    starburst(ctx, rng, 80, 80, 9, r, r * 0.55, stage === 2 ? RED : ORANGE, stage === 2 ? ORANGE : YELLOW)
     if (stage < 2) {
-      ctx.fillText('BAM!', 80, 88)
+      ctx.fillStyle = BLACK
+      ctx.font = 'bold 26px Verdana, Arial, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText('POW!', 80, 88)
     }
     return canvas
   })
 }
 
-export function drawInkSplatSprites(): HTMLCanvasElement[] {
+// Scattered loose parts: hit feedback and the floor decals kills leave.
+export function drawDebrisSprites(): HTMLCanvasElement[] {
   return [0, 1, 2].map((variant) => {
     const { canvas, ctx } = makeCanvas(96, 96)
-    const boil = makeBoil(hashString(`splat-${variant}`))
-    inkSplat(ctx, boil, 48, 48, 26)
+    const rng = makeRng(hashString(`debris-${variant}`))
+    debrisScatter(ctx, rng, 48, 48, 24, [GRAY_LIGHT, RED, YELLOW, BLUE])
     return canvas
   })
 }

@@ -7,8 +7,8 @@ type DebugPos = { x: number; z: number; yaw: number } | null
 
 function debugPos(page: Page): Promise<DebugPos> {
   return page.evaluate(() => {
-    const w = window as Window & { flatlineDebug?: () => { x: number; z: number; yaw: number } | null }
-    return w.flatlineDebug ? w.flatlineDebug() : null
+    const w = window as Window & { letgoDebug?: () => { x: number; z: number; yaw: number } | null }
+    return w.letgoDebug ? w.letgoDebug() : null
   })
 }
 
@@ -84,8 +84,8 @@ test('FIRE button shoots and HUD slots swap weapons', async ({ page }, testInfo)
     .poll(async () => Number(await page.getByTestId('hud-ammo').textContent()))
     .toBeLessThan(50)
 
-  await page.getByTestId('slot-paws').tap()
-  await expect(page.getByTestId('slot-paws')).toHaveClass(/current/)
+  await page.getByTestId('slot-claws').tap()
+  await expect(page.getByTestId('slot-claws')).toHaveClass(/current/)
   await expect(page.getByTestId('hud-ammo')).toHaveText('-')
 })
 

@@ -7,26 +7,26 @@ describe('weapons table', () => {
   })
 
   it('melee weapons never need ammo', () => {
-    expect(canFire(WEAPONS.paws, { bullets: 0, shells: 0, tnt: 0, cells: 0 })).toBe(true)
+    expect(canFire(WEAPONS.claws, { bullets: 0, shells: 0, tnt: 0, cells: 0 })).toBe(true)
   })
 
   it('guns need ammo and spend it', () => {
     const ammo = { ...AMMO_MAX_BASE, bullets: 1 }
-    expect(canFire(WEAPONS.snub, ammo)).toBe(true)
-    const after = spendAmmo(WEAPONS.snub, ammo)
+    expect(canFire(WEAPONS.studgun, ammo)).toBe(true)
+    const after = spendAmmo(WEAPONS.studgun, ammo)
     expect(after.bullets).toBe(0)
-    expect(canFire(WEAPONS.snub, after)).toBe(false)
+    expect(canFire(WEAPONS.studgun, after)).toBe(false)
   })
 
-  it('big cheese drinks 40 cells per shot', () => {
-    expect(canFire(WEAPONS.bigcheese, { bullets: 0, shells: 0, tnt: 0, cells: 39 })).toBe(false)
-    expect(canFire(WEAPONS.bigcheese, { bullets: 0, shells: 0, tnt: 0, cells: 40 })).toBe(true)
+  it('mega brick drinks 40 cells per shot', () => {
+    expect(canFire(WEAPONS.megabrick, { bullets: 0, shells: 0, tnt: 0, cells: 39 })).toBe(false)
+    expect(canFire(WEAPONS.megabrick, { bullets: 0, shells: 0, tnt: 0, cells: 40 })).toBe(true)
   })
 
   it('falls back to the best owned weapon with ammo', () => {
-    expect(bestFallbackWeapon(['paws', 'snub', 'scattergun'], { bullets: 0, shells: 5, tnt: 0, cells: 0 })).toBe(
-      'scattergun'
+    expect(bestFallbackWeapon(['claws', 'studgun', 'scatter'], { bullets: 0, shells: 5, tnt: 0, cells: 0 })).toBe(
+      'scatter'
     )
-    expect(bestFallbackWeapon(['paws', 'snub'], { bullets: 0, shells: 0, tnt: 0, cells: 0 })).toBe('paws')
+    expect(bestFallbackWeapon(['claws', 'studgun'], { bullets: 0, shells: 0, tnt: 0, cells: 0 })).toBe('claws')
   })
 })

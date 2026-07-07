@@ -5,10 +5,10 @@ import { expect, test } from '@playwright/test'
 test('film grain overlay actually animates', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chromium', 'covered on desktop')
   await page.goto('/')
-  await expect(page.getByTestId('film-overlay')).toBeVisible()
+  await expect(page.getByTestId('post-overlay')).toBeVisible()
 
   const snapshot = () =>
-    page.getByTestId('film-overlay').evaluate((element) => (element as HTMLCanvasElement).toDataURL())
+    page.getByTestId('post-overlay').evaluate((element) => (element as HTMLCanvasElement).toDataURL())
 
   const first = await snapshot()
   await expect
@@ -22,7 +22,7 @@ test('film preset changes the overlay density', async ({ page }, testInfo) => {
   await page.goto('/')
 
   const density = () =>
-    page.getByTestId('film-overlay').evaluate((element) => {
+    page.getByTestId('post-overlay').evaluate((element) => {
       const canvas = element as HTMLCanvasElement
       const ctx = canvas.getContext('2d')
       if (!ctx || canvas.width === 0) {
@@ -42,10 +42,10 @@ test('film preset changes the overlay density', async ({ page }, testInfo) => {
       return opaque
     })
 
-  await page.getByTestId('film-select').selectOption('studio')
+  await page.getByTestId('style-select').selectOption('clean')
   await page.waitForTimeout(400)
   const studio = await density()
-  await page.getByTestId('film-select').selectOption('vintage')
+  await page.getByTestId('style-select').selectOption('retro')
   await page.waitForTimeout(400)
   const vintage = await density()
   expect(vintage).toBeGreaterThan(studio)

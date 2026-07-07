@@ -1,211 +1,207 @@
-// First-person weapon viewmodels: gloved hands and cartoon hardware drawn
-// on transparent canvases, displayed at the bottom of the screen with
-// Doom's bob formula. Fire frames get the spiky ink-star muzzle flash.
+// First-person weapon viewmodels: yellow minifig claw hands and chunky
+// molded hardware drawn on transparent canvases, displayed at the bottom of
+// the screen with Doom's bob formula. Fire frames get a starburst flash.
 
-import { hashString } from '@/game/rng'
+import { hashString, type Rng } from '@/game/rng'
 import type { WeaponId } from '@/game/weapons'
-import { GRAY_DARK, GRAY_LIGHT, GRAY_MID, INK, PAPER, boilEllipse, glove, inkStar, inkStyle, makeBoil, makeCanvas, noodle, type Boil, type Ctx } from './ink'
+import {
+  BLACK,
+  BLUE,
+  BROWN,
+  GRAY_DARK,
+  GRAY_LIGHT,
+  RED,
+  SEAM,
+  SKIN,
+  WHITE,
+  YELLOW,
+  clawHand,
+  makeCanvas,
+  makeRng,
+  plasticRect,
+  shade,
+  starburst,
+  studSide,
+  type Ctx
+} from './brick'
 
 export const VIEW_W = 420
 export const VIEW_H = 300
 
 export type ViewFrame = 'idle' | 'fire'
 
-function fist(ctx: Ctx, boil: Boil, x: number, y: number, r: number) {
-  inkStyle(ctx, 5)
-  boilEllipse(ctx, boil, x, y, r, r * 0.85, '#f4f1e8', 1.4)
-  inkStyle(ctx, 3)
-  for (let i = 0; i < 3; i++) {
-    boilEllipse(ctx, boil, x - r * 0.5 + i * r * 0.5, y - r * 0.55, r * 0.24, r * 0.2, '#f4f1e8', 0.6)
-  }
+// A minifig arm reaching in from the bottom edge, ending in a claw hand.
+function arm(ctx: Ctx, x0: number, y0: number, x1: number, y1: number, width = 26) {
+  ctx.save()
+  const angle = Math.atan2(y1 - y0, x1 - x0)
+  const length = Math.hypot(x1 - x0, y1 - y0)
+  ctx.translate(x0, y0)
+  ctx.rotate(angle - Math.PI / 2)
+  plasticRect(ctx, -width / 2, 0, width, length, SKIN, { radius: width / 2, gloss: 0.55, outlineWidth: 2.5 })
+  ctx.restore()
+  clawHand(ctx, x1, y1, width * 0.55, SKIN, angle + Math.PI / 2)
 }
 
-function drawPaws(ctx: Ctx, boil: Boil, fire: boolean) {
+function drawClaws(ctx: Ctx, rng: Rng, fire: boolean) {
   const cx = VIEW_W / 2
   if (fire) {
-    noodle(ctx, boil, cx + 150, VIEW_H + 40, cx + 90, VIEW_H - 60, cx + 10, VIEW_H - 150, 22)
-    fist(ctx, boil, cx + 10, VIEW_H - 150, 44)
-    inkStar(ctx, boil, cx + 10, VIEW_H - 190, 6, 26, 12)
+    arm(ctx, cx + 150, VIEW_H + 60, cx + 14, VIEW_H - 150, 30)
+    starburst(ctx, rng, cx + 14, VIEW_H - 186, 6, 26, 12, YELLOW, WHITE)
   } else {
-    noodle(ctx, boil, cx - 190, VIEW_H + 40, cx - 150, VIEW_H - 30, cx - 110, VIEW_H - 80, 22)
-    fist(ctx, boil, cx - 110, VIEW_H - 80, 38)
-    noodle(ctx, boil, cx + 190, VIEW_H + 40, cx + 150, VIEW_H - 30, cx + 110, VIEW_H - 80, 22)
-    fist(ctx, boil, cx + 110, VIEW_H - 80, 38)
+    arm(ctx, cx - 190, VIEW_H + 60, cx - 104, VIEW_H - 88, 30)
+    arm(ctx, cx + 190, VIEW_H + 60, cx + 104, VIEW_H - 88, 30)
   }
 }
 
-function drawSnub(ctx: Ctx, boil: Boil, fire: boolean) {
-  const cx = VIEW_W / 2 + 40
-  const y = VIEW_H - (fire ? 18 : 0)
+function drawStudgun(ctx: Ctx, rng: Rng, fire: boolean) {
+  const cx = VIEW_W / 2 + 44
+  const y = VIEW_H - (fire ? 16 : 0)
+  arm(ctx, cx + 60, VIEW_H + 60, cx + 2, y - 40, 28)
   ctx.save()
   ctx.translate(cx, y)
-  ctx.rotate(-0.18)
-  // Arm from the bottom edge into the glove.
-  noodle(ctx, boil, 90, 90, 40, 30, 4, -34, 24)
-  // Revolver: barrel, frame, cylinder, grip. Drawn dark against the scene.
-  inkStyle(ctx, 4)
-  ctx.fillStyle = GRAY_DARK
-  // Grip.
-  ctx.save()
-  ctx.rotate(0.35)
-  ctx.fillRect(-10, -66, 22, 34)
-  ctx.strokeRect(-10, -66, 22, 34)
+  ctx.rotate(-0.16)
+  // Grip, body, and a stud-loaded barrel pointing up-screen.
+  plasticRect(ctx, -10, -66, 22, 34, GRAY_DARK, { radius: 4, gloss: 0.4 })
+  plasticRect(ctx, -12, -128, 26, 64, GRAY_DARK, { radius: 5, gloss: 0.55 })
+  studSide(ctx, 1, -134, 8, 6, GRAY_LIGHT)
   ctx.restore()
-  // Frame and barrel pointing up-screen.
-  ctx.fillStyle = INK
-  ctx.fillRect(-11, -132, 24, 66)
-  ctx.strokeRect(-11, -132, 24, 66)
-  // Cylinder bulge.
-  boilEllipse(ctx, boil, 1, -78, 20, 17, GRAY_MID, 1)
-  ctx.fillStyle = INK
-  ctx.beginPath()
-  ctx.arc(1, -78, 5, 0, Math.PI * 2)
-  ctx.fill()
-  // Front sight.
-  ctx.fillRect(-3, -140, 8, 9)
-  // Glove wrapped around the grip.
-  glove(ctx, boil, 2, -30, 26)
   if (fire) {
-    inkStar(ctx, boil, 1, -168, 7, 38, 16)
+    starburst(ctx, rng, cx - 20, y - 158, 7, 34, 15, YELLOW, WHITE)
   }
-  ctx.restore()
 }
 
-function drawScattergun(ctx: Ctx, boil: Boil, fire: boolean) {
+function drawScatter(ctx: Ctx, rng: Rng, fire: boolean) {
   const cx = VIEW_W / 2
   const y = VIEW_H - (fire ? 20 : 0)
-  inkStyle(ctx, 4)
-  // Long barrel angled to screen center.
-  ctx.fillStyle = GRAY_DARK
   ctx.save()
   ctx.translate(cx + 40, y)
   ctx.rotate(-0.5)
-  ctx.fillRect(-20, -190, 26, 160)
-  ctx.strokeRect(-20, -190, 26, 160)
-  ctx.fillStyle = GRAY_MID
-  ctx.fillRect(-24, -50, 34, 60)
-  ctx.strokeRect(-24, -50, 34, 60)
+  // Twin barrels and a wooden stock.
+  plasticRect(ctx, -22, -190, 18, 158, GRAY_DARK, { radius: 5, gloss: 0.55 })
+  plasticRect(ctx, -2, -190, 18, 158, GRAY_DARK, { radius: 5, gloss: 0.4 })
+  plasticRect(ctx, -26, -48, 44, 60, BROWN, { radius: 6, gloss: 0.4 })
   ctx.restore()
-  glove(ctx, boil, cx + 6, y - 60, 24)
-  glove(ctx, boil, cx + 58, y - 16, 26)
+  arm(ctx, cx + 140, VIEW_H + 60, cx + 56, y - 20, 28)
+  clawHand(ctx, cx + 4, y - 62, 15, SKIN, -0.5)
   if (fire) {
-    inkStar(ctx, boil, cx - 52, y - 208, 8, 44, 20)
+    starburst(ctx, rng, cx - 56, y - 208, 8, 44, 20, YELLOW, WHITE)
   }
 }
 
-function drawChatter(ctx: Ctx, boil: Boil, fire: boolean) {
+function drawGatling(ctx: Ctx, rng: Rng, fire: boolean) {
   const cx = VIEW_W / 2
   const y = VIEW_H - (fire ? 12 : 0)
-  inkStyle(ctx, 4)
   ctx.save()
   ctx.translate(cx + 30, y)
   ctx.rotate(-0.35)
-  // Barrel.
-  ctx.fillStyle = GRAY_DARK
-  ctx.fillRect(-14, -170, 20, 120)
-  ctx.strokeRect(-14, -170, 20, 120)
-  // Body.
-  ctx.fillStyle = GRAY_MID
-  ctx.fillRect(-22, -60, 40, 54)
-  ctx.strokeRect(-22, -60, 40, 54)
-  // Drum magazine.
-  boilEllipse(ctx, boil, -2, 16, 30, 30, GRAY_DARK, 1.2)
-  boilEllipse(ctx, boil, -2, 16, 10, 10, GRAY_MID, 0.8)
+  plasticRect(ctx, -14, -170, 22, 118, GRAY_DARK, { radius: 5, gloss: 0.55 })
+  plasticRect(ctx, -24, -62, 44, 56, GRAY_LIGHT, { radius: 6, gloss: 0.5 })
+  // Round stud drum.
+  ctx.beginPath()
+  ctx.arc(-2, 18, 30, 0, Math.PI * 2)
+  const g = ctx.createRadialGradient(-10, 8, 6, -2, 18, 30)
+  g.addColorStop(0, shade(GRAY_DARK, 0.25))
+  g.addColorStop(1, shade(GRAY_DARK, -0.2))
+  ctx.fillStyle = g
+  ctx.fill()
+  ctx.strokeStyle = SEAM
+  ctx.lineWidth = 2.5
+  ctx.stroke()
+  studSide(ctx, -2, -176, 7, 5, YELLOW)
   ctx.restore()
-  glove(ctx, boil, cx + 12, y - 88, 24)
-  glove(ctx, boil, cx + 46, y - 20, 26)
+  arm(ctx, cx + 150, VIEW_H + 60, cx + 48, y - 22, 28)
+  clawHand(ctx, cx + 12, y - 90, 15, SKIN, -0.4)
   if (fire) {
-    inkStar(ctx, boil, cx - 26, y - 196, 7, 38, 16)
+    starburst(ctx, rng, cx - 28, y - 196, 7, 38, 16, YELLOW, WHITE)
   }
 }
 
-function drawLobber(ctx: Ctx, boil: Boil, fire: boolean) {
+function drawDynamite(ctx: Ctx, rng: Rng, fire: boolean) {
   const cx = VIEW_W / 2
   if (fire) {
-    // Arm mid-throw, stick leaving the top of the frame.
-    noodle(ctx, boil, cx + 170, VIEW_H + 40, cx + 90, VIEW_H - 120, cx + 20, VIEW_H - 200, 22)
-    glove(ctx, boil, cx + 20, VIEW_H - 200, 30)
-    inkStar(ctx, boil, cx + 20, VIEW_H - 240, 5, 18, 8)
+    // Mid-throw: the arm whips up and the stick is already gone.
+    arm(ctx, cx + 170, VIEW_H + 60, cx + 22, VIEW_H - 198, 30)
+    starburst(ctx, rng, cx + 22, VIEW_H - 236, 5, 18, 8, YELLOW, WHITE)
   } else {
-    noodle(ctx, boil, cx + 170, VIEW_H + 40, cx + 110, VIEW_H - 40, cx + 60, VIEW_H - 90, 22)
-    glove(ctx, boil, cx + 60, VIEW_H - 90, 30)
-    // TNT stick with fuse.
+    arm(ctx, cx + 170, VIEW_H + 60, cx + 60, VIEW_H - 92, 30)
     ctx.save()
-    inkStyle(ctx, 4)
-    ctx.translate(cx + 60, VIEW_H - 120)
+    ctx.translate(cx + 60, VIEW_H - 124)
     ctx.rotate(0.3)
-    ctx.fillStyle = GRAY_DARK
-    ctx.fillRect(-12, -40, 24, 62)
-    ctx.strokeRect(-12, -40, 24, 62)
-    ctx.fillStyle = PAPER
-    ctx.fillRect(-12, -14, 24, 12)
+    plasticRect(ctx, -13, -42, 26, 66, RED, { radius: 9, gloss: 0.5 })
+    plasticRect(ctx, -13, -14, 26, 12, WHITE, { radius: 2, gloss: 0.25, outlineWidth: 1.5 })
     ctx.restore()
-    inkStar(ctx, boil, cx + 78, VIEW_H - 168, 5, 12, 6)
+    // Lit fuse.
+    ctx.strokeStyle = BLACK
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.moveTo(cx + 74, VIEW_H - 164)
+    ctx.quadraticCurveTo(cx + 84, VIEW_H - 176, cx + 80, VIEW_H - 186)
+    ctx.stroke()
+    starburst(ctx, rng, cx + 80, VIEW_H - 190, 5, 11, 5, YELLOW, WHITE)
   }
 }
 
-function drawRaygun(ctx: Ctx, boil: Boil, fire: boolean) {
+function drawRaygun(ctx: Ctx, rng: Rng, fire: boolean) {
   const cx = VIEW_W / 2 + 50
   const y = VIEW_H - 60 - (fire ? 16 : 0)
-  inkStyle(ctx, 4)
-  // Bulbous ray gun with fins.
-  boilEllipse(ctx, boil, cx, y - 40, 34, 26, GRAY_LIGHT, 1.2)
-  ctx.fillStyle = GRAY_DARK
-  ctx.fillRect(cx - 10, y - 92, 20, 34)
-  ctx.strokeRect(cx - 10, y - 92, 20, 34)
-  boilEllipse(ctx, boil, cx, y - 96, 16, 8, GRAY_MID, 1)
-  // Fins.
+  // Classic space blaster: white body, side fins, trans-green emitter.
+  plasticRect(ctx, cx - 34, y - 66, 68, 46, WHITE, { radius: 10, gloss: 0.65 })
   for (const side of [-1, 1]) {
     ctx.beginPath()
-    ctx.moveTo(cx + side * 30, y - 44)
-    ctx.lineTo(cx + side * 52, y - 58)
-    ctx.lineTo(cx + side * 30, y - 26)
+    ctx.moveTo(cx + side * 32, y - 60)
+    ctx.lineTo(cx + side * 54, y - 72)
+    ctx.lineTo(cx + side * 32, y - 40)
     ctx.closePath()
-    ctx.fillStyle = GRAY_MID
+    ctx.fillStyle = BLUE
     ctx.fill()
+    ctx.strokeStyle = 'rgba(10,12,16,0.5)'
+    ctx.lineWidth = 2
     ctx.stroke()
   }
-  glove(ctx, boil, cx, y + 8, 26)
-  noodle(ctx, boil, cx + 60, VIEW_H + 30, cx + 34, y + 42, cx + 8, y + 20, 20)
+  plasticRect(ctx, cx - 11, y - 98, 22, 34, GRAY_LIGHT, { radius: 5, gloss: 0.5 })
+  ctx.save()
+  ctx.shadowColor = '#7ef05a'
+  ctx.shadowBlur = 12
+  ctx.beginPath()
+  ctx.ellipse(cx, y - 100, 15, 8, 0, 0, Math.PI * 2)
+  ctx.fillStyle = '#7ef05a'
+  ctx.fill()
+  ctx.restore()
+  arm(ctx, cx + 70, VIEW_H + 50, cx + 10, y + 8, 26)
   if (fire) {
-    inkStar(ctx, boil, cx, y - 118, 9, 30, 14)
+    starburst(ctx, rng, cx, y - 124, 9, 30, 14, '#7ef05a', WHITE)
   }
 }
 
-function drawBigCheese(ctx: Ctx, boil: Boil, fire: boolean) {
+function drawMegabrick(ctx: Ctx, rng: Rng, fire: boolean) {
   const cx = VIEW_W / 2
   const y = VIEW_H - (fire ? 24 : 0)
-  inkStyle(ctx, 5)
-  // A comically large cheese-shaped cannon held with both hands.
-  boilEllipse(ctx, boil, cx, y - 60, 80, 54, GRAY_LIGHT, 1.8)
-  ctx.fillStyle = GRAY_MID
-  for (const [hx, hy, r] of [
-    [cx - 30, y - 76, 12],
-    [cx + 26, y - 48, 10],
-    [cx + 6, y - 90, 8]
-  ]) {
-    ctx.beginPath()
-    ctx.arc(hx, hy, r, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.stroke()
+  // A comically large 2x4 brick on a launcher cradle, held with both hands.
+  plasticRect(ctx, cx - 86, y - 62, 172, 52, GRAY_DARK, { radius: 8, gloss: 0.4 })
+  plasticRect(ctx, cx - 74, y - 118, 148, 62, RED, { radius: 5, gloss: 0.6, outlineWidth: 3 })
+  for (let i = 0; i < 4; i++) {
+    studSide(ctx, cx - 54 + i * 36, y - 126, 13, 8, RED)
   }
-  // Muzzle.
-  boilEllipse(ctx, boil, cx, y - 118, 30, 14, INK, 1.2)
-  glove(ctx, boil, cx - 74, y - 30, 28)
-  glove(ctx, boil, cx + 74, y - 30, 28)
+  // Emitter mouth above the brick.
+  ctx.beginPath()
+  ctx.ellipse(cx, y - 128, 30, 10, 0, 0, Math.PI * 2)
+  ctx.fillStyle = BLACK
+  ctx.fill()
+  arm(ctx, cx - 170, VIEW_H + 60, cx - 84, y - 36, 30)
+  arm(ctx, cx + 170, VIEW_H + 60, cx + 84, y - 36, 30)
   if (fire) {
-    inkStar(ctx, boil, cx, y - 150, 10, 52, 24)
+    starburst(ctx, rng, cx, y - 158, 10, 54, 24, RED, YELLOW)
   }
 }
 
-const DRAWERS: Record<WeaponId, (ctx: Ctx, boil: Boil, fire: boolean) => void> = {
-  paws: drawPaws,
-  snub: drawSnub,
-  scattergun: drawScattergun,
-  chatter: drawChatter,
-  lobber: drawLobber,
+const DRAWERS: Record<WeaponId, (ctx: Ctx, rng: Rng, fire: boolean) => void> = {
+  claws: drawClaws,
+  studgun: drawStudgun,
+  scatter: drawScatter,
+  gatling: drawGatling,
+  dynamite: drawDynamite,
   raygun: drawRaygun,
-  bigcheese: drawBigCheese
+  megabrick: drawMegabrick
 }
 
 export type ViewmodelSet = Record<ViewFrame, HTMLCanvasElement[]>
@@ -215,8 +211,11 @@ export function drawViewmodel(weapon: WeaponId): ViewmodelSet {
   for (const frame of ['idle', 'fire'] as ViewFrame[]) {
     set[frame] = [0, 1].map((variant) => {
       const { canvas, ctx } = makeCanvas(VIEW_W, VIEW_H)
-      const boil = makeBoil(hashString(`vm-${weapon}-${frame}-${variant}`))
-      DRAWERS[weapon](ctx, boil, frame === 'fire')
+      const rng = makeRng(hashString(`vm-${weapon}-${frame}-${variant}`))
+      ctx.save()
+      ctx.translate(0, variant === 0 ? 0 : 2)
+      DRAWERS[weapon](ctx, rng, frame === 'fire')
+      ctx.restore()
       return canvas
     })
   }

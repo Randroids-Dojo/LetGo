@@ -1,5 +1,5 @@
-import { FlatlineGame } from '@/components/FlatlineGame'
+import { LetGoGame } from '@/components/LetGoGame'
 
 export default function Home() {
-  return <FlatlineGame />
+  return <LetGoGame />
 }

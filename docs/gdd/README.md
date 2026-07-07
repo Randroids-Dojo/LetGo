@@ -1,6 +1,6 @@
-# Flatline GDD (2026-07 reboot)
+# LetGo GDD (2026-07 reboot)
 
-Canonical design document for Flatline: a black-and-white 1930s rubber-hose cartoon noir FPS with original Doom mechanics, an endless streamed dungeon, and Rogue Legacy 2 style death-driven meta progression.
+Canonical design document for LetGo: a black-and-white 1930s rubber-hose cartoon noir FPS with original Doom mechanics, an endless streamed dungeon, and Rogue Legacy 2 style death-driven meta progression.
 
 The previous game (single-arena wave shooter) is archived under `docs/_archive/2026-07-07-pre-reboot/`. Its GDD no longer governs anything.
 

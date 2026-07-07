@@ -164,7 +164,7 @@ describe('generateChunk', () => {
           }
         }
         for (const pickup of chunk.pickups) {
-          if (pickup.kind !== 'coinPile') {
+          if (pickup.kind !== 'studPile') {
             continue
           }
           const lx = pickup.gx - cx * CHUNK_SIZE
@@ -191,16 +191,16 @@ describe('generateChunk', () => {
 
   it('gates tough enemies behind deeper rings', () => {
     const ring0 = enemyWeightsForRing(0)
-    expect(ring0.find((w) => w.kind === 'bruiser')?.weight).toBe(0)
-    expect(ring0.find((w) => w.kind === 'fatcat')?.weight).toBe(0)
+    expect(ring0.find((w) => w.kind === 'knight')?.weight).toBe(0)
+    expect(ring0.find((w) => w.kind === 'golem')?.weight).toBe(0)
     const ring4 = enemyWeightsForRing(4)
-    expect(ring4.find((w) => w.kind === 'fatcat')?.weight).toBeGreaterThan(0)
+    expect(ring4.find((w) => w.kind === 'golem')?.weight).toBeGreaterThan(0)
   })
 
   it('spawns more dangerous mixes deeper out', () => {
     const near = generateChunk(SEED, 1, 0)
     const far = generateChunk(SEED, 9, 9)
-    expect(near.enemies.every((e) => e.kind !== 'fatcat')).toBe(true)
+    expect(near.enemies.every((e) => e.kind !== 'golem')).toBe(true)
     expect(far.ring).toBe(9)
   })
 })

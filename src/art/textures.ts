@@ -1,17 +1,34 @@
-// Procedural environment textures: flat grayscale fills with hand-inked
-// lines, in the cel-over-painted-background tradition. Each wall texture is
-// baked in two shades (Doom lights north-south walls differently from
-// east-west) plus door and floor/ceiling tiles.
+// Procedural environment textures: molded plastic bricks in bright toy
+// colors. Walls are stacked brick courses with tone jitter per brick, the
+// floor is a classic green studded baseplate, and the ceiling is the tube
+// side of a big plate.
 
-import { hashString, mulberry32 } from '@/game/rng'
-import { GRAY_DARK, GRAY_LIGHT, GRAY_MID, INK, PAPER, inkStyle, makeBoil, makeCanvas, boilLine, halftone, type Ctx } from './ink'
+import {
+  BLACK,
+  BLUE,
+  GOLD,
+  GRAY_DARK,
+  GRAY_LIGHT,
+  GREEN,
+  RED,
+  SEAM,
+  WHITE,
+  YELLOW,
+  makeCanvas,
+  makeRng,
+  plasticRect,
+  shade,
+  stud,
+  tube,
+  type Ctx
+} from './brick'
 
 const SIZE = 256
 
-export type WallTheme = 'brick' | 'panel' | 'stone'
+export type WallTheme = 'classic' | 'castle' | 'space'
 
 export function themeForRing(ring: number): WallTheme {
-  const themes: WallTheme[] = ['brick', 'panel', 'stone']
+  const themes: WallTheme[] = ['classic', 'castle', 'space']
   return themes[ring % themes.length]
 }
 
@@ -20,176 +37,199 @@ function base(ctx: Ctx, fill: string) {
   ctx.fillRect(0, 0, SIZE, SIZE)
 }
 
-export function drawBrickWall(seed: number): HTMLCanvasElement {
-  const { canvas, ctx } = makeCanvas(SIZE, SIZE)
-  const boil = makeBoil(seed)
-  base(ctx, GRAY_LIGHT)
-  inkStyle(ctx, 4)
-  const rows = 6
+// Stacked brick courses with a running bond offset and per-brick tone
+// jitter, so walls read as built from individual pieces.
+function brickCourses(ctx: Ctx, seed: number, color: string, rows: number, minW: number, maxW: number) {
+  const rng = makeRng(seed)
   const rowH = SIZE / rows
-  for (let r = 0; r <= rows; r++) {
-    boilLine(ctx, boil, 0, r * rowH, SIZE, r * rowH, 1.8)
-  }
   for (let r = 0; r < rows; r++) {
-    const offset = r % 2 === 0 ? 0 : SIZE / 6
-    for (let c = 0; c < 3; c++) {
-      const x = ((offset + (c * SIZE) / 3) % SIZE + SIZE) % SIZE
-      boilLine(ctx, boil, x, r * rowH, x, (r + 1) * rowH, 1.8)
-    }
-    // A few bricks get halftone shading for wear.
-    const rng = mulberry32(seed + r)
-    if (rng() < 0.6) {
-      const bx = Math.floor(rng() * 3) * (SIZE / 3)
-      halftone(ctx, bx + 12, r * rowH + 8, SIZE / 3 - 24, rowH - 16, 9, 1.6, GRAY_MID)
-    }
-  }
-  return canvas
-}
-
-export function drawPanelWall(seed: number): HTMLCanvasElement {
-  const { canvas, ctx } = makeCanvas(SIZE, SIZE)
-  const boil = makeBoil(seed)
-  base(ctx, GRAY_MID)
-  // Wainscoting: lighter upper wallpaper with pinstripes, dark wood below.
-  ctx.fillStyle = GRAY_LIGHT
-  ctx.fillRect(0, 0, SIZE, SIZE * 0.62)
-  inkStyle(ctx, 3)
-  for (let x = 12; x < SIZE; x += 24) {
-    boilLine(ctx, boil, x, 6, x, SIZE * 0.6, 1.2)
-  }
-  ctx.fillStyle = GRAY_DARK
-  ctx.fillRect(0, SIZE * 0.62, SIZE, SIZE * 0.38)
-  inkStyle(ctx, 5)
-  boilLine(ctx, boil, 0, SIZE * 0.62, SIZE, SIZE * 0.62, 1.6)
-  inkStyle(ctx, 3)
-  for (let x = 0; x < SIZE; x += 64) {
-    boilLine(ctx, boil, x + 8, SIZE * 0.66, x + 8, SIZE - 8, 1.4)
-  }
-  return canvas
-}
-
-export function drawStoneWall(seed: number): HTMLCanvasElement {
-  const { canvas, ctx } = makeCanvas(SIZE, SIZE)
-  const boil = makeBoil(seed)
-  base(ctx, GRAY_DARK)
-  inkStyle(ctx, 4)
-  const rng = mulberry32(seed)
-  let y = 0
-  while (y < SIZE) {
-    const rowH = 40 + rng() * 30
-    boilLine(ctx, boil, 0, y, SIZE, y, 2.2)
-    let x = rng() * 40
+    let x = -Math.floor(rng() * maxW * 0.8)
     while (x < SIZE) {
-      boilLine(ctx, boil, x, y, x, Math.min(SIZE, y + rowH), 2.2)
-      x += 50 + rng() * 60
+      const w = minW + rng() * (maxW - minW)
+      const jitter = (rng() - 0.5) * 0.16
+      plasticRect(ctx, x, r * rowH, w, rowH, shade(color, jitter), {
+        radius: 2,
+        gloss: 0.35,
+        outline: SEAM,
+        outlineWidth: 2.5
+      })
+      x += w
     }
-    y += rowH
   }
-  halftone(ctx, 0, 0, SIZE, SIZE, 14, 1.4, 'rgba(16,16,16,0.5)')
+}
+
+export function drawClassicWall(seed: number): HTMLCanvasElement {
+  const { canvas, ctx } = makeCanvas(SIZE, SIZE)
+  base(ctx, shade(RED, -0.35))
+  brickCourses(ctx, seed, RED, 5, 60, 110)
   return canvas
+}
+
+export function drawCastleWall(seed: number): HTMLCanvasElement {
+  const { canvas, ctx } = makeCanvas(SIZE, SIZE)
+  base(ctx, shade(GRAY_DARK, -0.3))
+  brickCourses(ctx, seed, GRAY_LIGHT, 6, 40, 90)
+  // A few mossy green bricks for dungeon age.
+  const rng = makeRng(seed ^ 0x51ce)
+  const rowH = SIZE / 6
+  for (let i = 0; i < 3; i++) {
+    const r = Math.floor(rng() * 6)
+    const x = rng() * (SIZE - 70)
+    plasticRect(ctx, x, r * rowH, 55 + rng() * 25, rowH, shade(GREEN, -0.1 + rng() * 0.2), {
+      radius: 2,
+      gloss: 0.35,
+      outlineWidth: 2.5
+    })
+  }
+  return canvas
+}
+
+export function drawSpaceWall(seed: number): HTMLCanvasElement {
+  const { canvas, ctx } = makeCanvas(SIZE, SIZE)
+  base(ctx, shade(BLUE, -0.4))
+  const rng = makeRng(seed)
+  // Big smooth panels.
+  const rows = 3
+  const rowH = SIZE / rows
+  for (let r = 0; r < rows; r++) {
+    let x = -Math.floor(rng() * 60)
+    while (x < SIZE) {
+      const w = 90 + rng() * 80
+      plasticRect(ctx, x, r * rowH, w, rowH, shade(BLUE, (rng() - 0.4) * 0.2), {
+        radius: 3,
+        gloss: 0.5,
+        outlineWidth: 3
+      })
+      x += w
+    }
+  }
+  // A glowing greeble strip across the middle panel row.
+  const y = rowH * 1.5
+  for (let x = 18; x < SIZE; x += 36) {
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(x, y, 7, 0, Math.PI * 2)
+    ctx.fillStyle = rngPick(rng, ['#79e6ff', YELLOW, WHITE])
+    ctx.shadowColor = '#79e6ff'
+    ctx.shadowBlur = 8
+    ctx.fill()
+    ctx.restore()
+  }
+  return canvas
+}
+
+function rngPick<T>(rng: () => number, options: T[]): T {
+  return options[Math.floor(rng() * options.length)]
 }
 
 export function drawWall(theme: WallTheme, seed: number): HTMLCanvasElement {
-  return theme === 'brick' ? drawBrickWall(seed) : theme === 'panel' ? drawPanelWall(seed) : drawStoneWall(seed)
+  return theme === 'classic' ? drawClassicWall(seed) : theme === 'castle' ? drawCastleWall(seed) : drawSpaceWall(seed)
 }
 
-export function drawFloor(seed: number): HTMLCanvasElement {
-  const { canvas, ctx } = makeCanvas(SIZE, SIZE)
-  const boil = makeBoil(seed)
-  base(ctx, GRAY_MID)
-  // Checkerboard tiles, worn.
-  const tiles = 4
-  const t = SIZE / tiles
-  for (let r = 0; r < tiles; r++) {
-    for (let c = 0; c < tiles; c++) {
-      if ((r + c) % 2 === 0) {
-        ctx.fillStyle = GRAY_LIGHT
-        ctx.fillRect(c * t, r * t, t, t)
-      }
+// Stamp a piece (stud, tube) at the center of each cell of an 8x8 grid.
+function studGrid(ctx: Ctx, draw: (cx: number, cy: number, cell: number) => void) {
+  const grid = 8
+  const cell = SIZE / grid
+  for (let r = 0; r < grid; r++) {
+    for (let c = 0; c < grid; c++) {
+      draw(c * cell + cell / 2, r * cell + cell / 2, cell)
     }
   }
-  inkStyle(ctx, 3)
-  for (let i = 0; i <= tiles; i++) {
-    boilLine(ctx, boil, 0, i * t, SIZE, i * t, 1.5)
-    boilLine(ctx, boil, i * t, 0, i * t, SIZE, 1.5)
+}
+
+// The floor: a green baseplate with an 8x8 stud grid.
+export function drawFloor(seed: number): HTMLCanvasElement {
+  const { canvas, ctx } = makeCanvas(SIZE, SIZE)
+  const rng = makeRng(seed)
+  base(ctx, GREEN)
+  // Faint plate seams every 4 studs.
+  const cell = SIZE / 8
+  ctx.strokeStyle = 'rgba(10, 12, 16, 0.25)'
+  ctx.lineWidth = 2
+  for (let i = 0; i <= 8; i += 4) {
+    ctx.beginPath()
+    ctx.moveTo(i * cell, 0)
+    ctx.lineTo(i * cell, SIZE)
+    ctx.moveTo(0, i * cell)
+    ctx.lineTo(SIZE, i * cell)
+    ctx.stroke()
   }
+  studGrid(ctx, (cx, cy, c) => stud(ctx, cx, cy, c * 0.3, shade(GREEN, (rng() - 0.5) * 0.08)))
   return canvas
 }
 
+// The ceiling: the underside of a big dark plate, all tubes.
 export function drawCeiling(seed: number): HTMLCanvasElement {
   const { canvas, ctx } = makeCanvas(SIZE, SIZE)
-  const boil = makeBoil(seed)
-  base(ctx, '#3a3833')
-  inkStyle(ctx, 3)
-  for (let x = 0; x < SIZE; x += 32) {
-    boilLine(ctx, boil, x, 0, x, SIZE, 1.2)
-  }
-  halftone(ctx, 0, 0, SIZE, SIZE, 16, 1.2, 'rgba(16,16,16,0.6)')
+  const rng = makeRng(seed)
+  const color = shade(GRAY_DARK, -0.45)
+  base(ctx, color)
+  studGrid(ctx, (cx, cy, c) => tube(ctx, cx, cy, c * 0.26, shade(color, (rng() - 0.5) * 0.1)))
   return canvas
 }
 
 export function drawDoor(locked: boolean, seed: number): HTMLCanvasElement {
   const { canvas, ctx } = makeCanvas(SIZE, SIZE)
-  const boil = makeBoil(seed)
-  base(ctx, locked ? GRAY_DARK : GRAY_MID)
-  inkStyle(ctx, 6)
-  ctx.strokeRect(6, 6, SIZE - 12, SIZE - 12)
-  inkStyle(ctx, 4)
-  // Panel lines.
-  boilLine(ctx, boil, 24, 24, SIZE - 24, 24, 1.5)
-  boilLine(ctx, boil, 24, 24, 24, SIZE - 24, 1.5)
-  boilLine(ctx, boil, SIZE - 24, 24, SIZE - 24, SIZE - 24, 1.5)
-  boilLine(ctx, boil, 24, SIZE - 24, SIZE - 24, SIZE - 24, 1.5)
+  const rng = makeRng(seed)
+  const color = locked ? GOLD : YELLOW
+  base(ctx, shade(color, -0.4))
+  plasticRect(ctx, 6, 6, SIZE - 12, SIZE - 12, color, { radius: 8, gloss: 0.55, outlineWidth: 4 })
   if (locked) {
-    // Vault wheel.
-    ctx.save()
-    inkStyle(ctx, 7)
-    ctx.beginPath()
-    ctx.arc(SIZE / 2, SIZE / 2, 46, 0, Math.PI * 2)
-    ctx.stroke()
-    for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * Math.PI * 2 + 0.4
-      boilLine(
-        ctx,
-        boil,
-        SIZE / 2 + Math.cos(a) * 14,
-        SIZE / 2 + Math.sin(a) * 14,
-        SIZE / 2 + Math.cos(a) * 62,
-        SIZE / 2 + Math.sin(a) * 62,
-        1.2
-      )
+    // Vault door: stud rivets around the edge and a big padlock.
+    for (let i = 0; i < 6; i++) {
+      const t = 30 + (i * (SIZE - 60)) / 5
+      stud(ctx, t, 26, 9, color)
+      stud(ctx, t, SIZE - 26, 9, color)
     }
+    ctx.save()
+    ctx.strokeStyle = shade(GRAY_DARK, -0.2)
+    ctx.lineWidth = 14
+    ctx.beginPath()
+    ctx.arc(SIZE / 2, SIZE / 2 - 14, 34, Math.PI, Math.PI * 2)
+    ctx.stroke()
+    plasticRect(ctx, SIZE / 2 - 44, SIZE / 2 - 16, 88, 74, GRAY_DARK, { radius: 10, gloss: 0.5 })
+    ctx.fillStyle = BLACK
+    ctx.beginPath()
+    ctx.arc(SIZE / 2, SIZE / 2 + 12, 10, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillRect(SIZE / 2 - 5, SIZE / 2 + 14, 10, 22)
     ctx.restore()
   } else {
-    // Push plate and handle.
-    ctx.fillStyle = GRAY_LIGHT
-    ctx.fillRect(SIZE / 2 - 30, SIZE / 2 - 8, 60, 16)
-    inkStyle(ctx, 3)
-    ctx.strokeRect(SIZE / 2 - 30, SIZE / 2 - 8, 60, 16)
+    // Four recessed panels and a gray handle.
+    for (const [px, py] of [
+      [30, 30],
+      [SIZE / 2 + 8, 30],
+      [30, SIZE / 2 + 8],
+      [SIZE / 2 + 8, SIZE / 2 + 8]
+    ]) {
+      plasticRect(ctx, px, py, SIZE / 2 - 38, SIZE / 2 - 38, shade(color, (rng() - 0.7) * 0.18), {
+        radius: 6,
+        gloss: 0.3,
+        outlineWidth: 2.5
+      })
+    }
+    plasticRect(ctx, SIZE / 2 - 34, SIZE / 2 - 9, 68, 18, GRAY_LIGHT, { radius: 8, gloss: 0.6 })
   }
   return canvas
 }
 
-// The office door back at the start: EXIT sign styling in reverse. Drawn as
-// a plain door with lettering.
-export function drawOfficeDoor(): HTMLCanvasElement {
+// The Workshop door back at the start room: bright blue with a sign.
+export function drawWorkshopDoor(): HTMLCanvasElement {
   const { canvas, ctx } = makeCanvas(SIZE, SIZE)
-  const boil = makeBoil(hashString('office-door'))
-  base(ctx, GRAY_MID)
-  inkStyle(ctx, 6)
-  ctx.strokeRect(6, 6, SIZE - 12, SIZE - 12)
-  // Frosted glass pane with lettering.
-  ctx.fillStyle = PAPER
-  ctx.fillRect(36, 30, SIZE - 72, 110)
-  inkStyle(ctx, 4)
-  ctx.strokeRect(36, 30, SIZE - 72, 110)
-  ctx.fillStyle = INK
-  ctx.font = 'bold 30px Georgia, serif'
+  base(ctx, shade(BLUE, -0.4))
+  plasticRect(ctx, 6, 6, SIZE - 12, SIZE - 12, BLUE, { radius: 8, gloss: 0.55, outlineWidth: 4 })
+  // White sign plate with lettering.
+  plasticRect(ctx, 30, 28, SIZE - 60, 116, WHITE, { radius: 6, gloss: 0.35 })
+  ctx.fillStyle = BLACK
+  ctx.font = 'bold 40px Verdana, Arial, sans-serif'
   ctx.textAlign = 'center'
-  ctx.fillText('FLATLINE', SIZE / 2, 72)
-  ctx.font = 'bold 20px Georgia, serif'
-  ctx.fillText('DETECTIVE', SIZE / 2, 100)
-  ctx.fillText('AGENCY', SIZE / 2, 124)
-  boilLine(ctx, boil, 36, 140, SIZE - 36, 140, 1)
+  ctx.fillText('LETGO', SIZE / 2, 78)
+  ctx.font = 'bold 22px Verdana, Arial, sans-serif'
+  ctx.fillText('WORKSHOP', SIZE / 2, 112)
+  // Yellow stud row under the sign.
+  for (let i = 0; i < 5; i++) {
+    stud(ctx, 52 + i * 38, 176, 11, YELLOW)
+  }
+  plasticRect(ctx, SIZE / 2 - 30, SIZE - 52, 60, 16, GRAY_LIGHT, { radius: 8, gloss: 0.6 })
   return canvas
 }

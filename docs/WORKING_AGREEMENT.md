@@ -1,6 +1,6 @@
 # Working Agreement
 
-This file defines the process rules for implementation slices on Flatline.
+This file defines the process rules for implementation slices on LetGo.
 
 ## Branches
 

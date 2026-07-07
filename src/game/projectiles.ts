@@ -1,12 +1,12 @@
 // Shared projectile simulation for player rockets/rays and enemy shots.
-// Cartoon rule from the art bible: projectiles are always visible objects.
+// Toy-box rule: projectiles are always visible flying bricks and bolts.
 
 import type { SolidAt } from './collision'
 import { splashDamage } from './combat'
 import { worldToCell } from './dungeon'
 import { dist, type Vec2 } from './types'
 
-export type ProjectileKind = 'tnt' | 'ray' | 'bigcheese' | 'knife' | 'ember'
+export type ProjectileKind = 'tnt' | 'ray' | 'megabrick' | 'bolt' | 'fireball'
 
 export type Projectile = {
   id: number
